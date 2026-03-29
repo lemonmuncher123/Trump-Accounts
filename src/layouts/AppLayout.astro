@@ -1,0 +1,46 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import FloatingNav from '../components/FloatingNav.astro';
+import '../styles/global.css';
+
+interface Props {
+  activeTab: 'calculator' | 'faq' | 'how-it-works' | 'about-us';
+  title: string;
+  description: string;
+}
+
+const { activeTab, title, description } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <ClientRouter />
+    <script is:inline>
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="page-backdrop" aria-hidden="true"></div>
+
+      <FloatingNav activeTab={activeTab} />
+
+      <main class="page-main">
+        <slot />
+      </main>
+
+      <footer class="page-footer">
+        <p>
+          Data sourced from ^GSPC Yahoo Finance. Policy metrics mapped against Federal Register Proposed
+          Regulations for Section 530A.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

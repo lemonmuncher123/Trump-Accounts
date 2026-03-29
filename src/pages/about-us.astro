@@ -1,0 +1,16 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import AboutSection from '../components/AboutSection';
+import NationalImpact from '../components/NationalImpact';
+---
+
+<AppLayout
+  activeTab="about-us"
+  title="About Us | College Savings Calculator"
+  description="Learn what this planner is for, how it uses historical market data, and why the project is framed as a decision-support tool."
+>
+  <section class="route-page">
+    <AboutSection />
+    <NationalImpact client:load />
+  </section>
+</AppLayout>

@@ -1,0 +1,317 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+
+const base = import.meta.env.BASE_URL;
+
+const milestones = [
+  {
+    age: 'Birth',
+    title: 'Starter deposit',
+    copy: 'The planner begins with a federal seed deposit instead of a zero-dollar balance.',
+    tone: 'seed'
+  },
+  {
+    age: 'Setup',
+    title: 'Account activation',
+    copy: 'Families should expect identity, citizenship, SSN, and custodian details to matter in practice.',
+    tone: 'watch'
+  },
+  {
+    age: 'Years 1-18',
+    title: 'Compounding window',
+    copy: 'Family savings and any employer match are added across the full 18-year period.',
+    tone: 'growth'
+  },
+  {
+    age: 'Age 18',
+    title: 'IRA-style handoff',
+    copy: 'Once the child reaches adulthood, tax treatment and withdrawal rules become the next decision point.',
+    tone: 'transition'
+  }
+];
+
+const lifecycle = [
+  {
+    step: '01',
+    eyebrow: 'Setup',
+    title: 'Establish the account and claim the starting deposit.',
+    copy: 'The policy is framed around a federally seeded account, but real use still depends on the practical setup flow.',
+    tag: 'Eligibility first',
+    tone: 'seed',
+    points: [
+      'Birth window and U.S. citizenship rules determine who qualifies.',
+      'Families should be ready for SSN, identity, and custodian requirements.',
+      'Some election and claiming details still depend on final implementation guidance.'
+    ]
+  },
+  {
+    step: '02',
+    eyebrow: 'Growth',
+    title: 'Add family savings and let compounding do the heavy lifting.',
+    copy: 'The calculator treats the account as a long-duration savings runway rather than a one-time deposit.',
+    tag: '18-year runway',
+    tone: 'growth',
+    points: [
+      'Annual family contributions are the largest controllable input.',
+      'Employer match can add meaningful lift when modeled or available.',
+      'Returns and volatility are replayed across many market-style paths instead of one fixed forecast.'
+    ]
+  },
+  {
+    step: '03',
+    eyebrow: 'Transition',
+    title: 'Read the balance at age 18 under adult tax rules.',
+    copy: 'The final question is not just how much is there, but what rules apply once the beneficiary takes control.',
+    tag: 'Age-18 handoff',
+    tone: 'transition',
+    points: [
+      'The route assumes an IRA-style transition at adulthood.',
+      'Education, first-home, and medical exceptions can matter for early access.',
+      'Rollover treatment, aid impact, and final tax handling still require close attention.'
+    ]
+  }
+];
+
+const drivers = [
+  {
+    value: '$1,000',
+    title: 'Federal seed',
+    copy: 'The projection starts with an initial deposit already in place.'
+  },
+  {
+    value: 'Annual',
+    title: 'Family savings',
+    copy: 'Your yearly contribution slider adds recurring deposits over the full 18-year timeline.'
+  },
+  {
+    value: 'Match',
+    title: 'Employer support',
+    copy: 'Optional employer participation stacks on top of family contributions when modeled.'
+  },
+  {
+    value: 'Public / Private',
+    title: 'Tuition target',
+    copy: 'Changing the school target shifts the cost benchmark the account needs to meet.'
+  },
+  {
+    value: '1,000 paths',
+    title: 'Market uncertainty',
+    copy: 'The simulation reruns the plan across many return paths rather than one average-only outcome.'
+  }
+];
+
+const outputs = [
+  {
+    title: 'Median End Balance',
+    copy: 'The midpoint savings result across all simulated paths.'
+  },
+  {
+    title: 'Est. 4-Year Tuition',
+    copy: 'The midpoint projected cost of the selected college target after inflation.'
+  },
+  {
+    title: 'Success Rate',
+    copy: 'The share of simulations where projected savings fully cover projected tuition.'
+  },
+  {
+    title: 'Scenario field',
+    copy: 'Each dot is one possible future, so you can see whether the cloud clears the tuition line or clusters below it.'
+  }
+];
+
+const watchpoints = [
+  {
+    pill: 'Pending guidance',
+    title: 'Claiming workflow',
+    copy: 'Draft materials suggest setup may still require a formal election or administrative activation step.'
+  },
+  {
+    pill: 'Unknown adoption',
+    title: 'Employer match availability',
+    copy: 'The calculator can model a match, but real participation rates are still uncertain.'
+  },
+  {
+    pill: 'State variance',
+    title: 'Tax conformity',
+    copy: 'Federal treatment may not map cleanly to every state tax regime.'
+  },
+  {
+    pill: 'Reserved rules',
+    title: 'Aid and rollover treatment',
+    copy: 'Some age-18 transfer details and financial-aid effects still depend on future guidance.'
+  }
+];
+---
+
+<AppLayout
+  activeTab="how-it-works"
+  title="How It Works | College Savings Calculator"
+  description="Understand the college savings account lifecycle, the inputs behind the projection, and how to read the simulated results."
+>
+  <section class="route-page">
+    <section class="container section-spacing route-page__lead">
+      <div class="section-frame section-frame--split how-hero">
+        <div class="section-intro how-hero__copy">
+          <span class="section-kicker">How It Works</span>
+          <h1 class="section-title">One clear view of the account lifecycle, the model, and the result.</h1>
+          <p class="section-copy">
+            This page is the quick-read version of the full system: how the account starts, what the calculator
+            actually simulates, and which rules still deserve caution before anyone treats the projection as final.
+          </p>
+
+          <div class="how-hero__meta">
+            <div class="how-hero__meta-item">
+              <span>Federal seed</span>
+              <strong>$1,000</strong>
+            </div>
+            <div class="how-hero__meta-item">
+              <span>Compounding window</span>
+              <strong>18 years</strong>
+            </div>
+            <div class="how-hero__meta-item">
+              <span>Simulation depth</span>
+              <strong>1,000 paths</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="how-lifecycle-board">
+          <div class="how-lifecycle-board__header">
+            <span class="how-lifecycle-board__eyebrow">Lifecycle map</span>
+            <strong>Birth to adulthood</strong>
+          </div>
+
+          <div class="how-lifecycle-track">
+            {milestones.map((milestone, index) => (
+              <article class={`how-lifecycle-milestone is-${milestone.tone}`}>
+                <span class="how-lifecycle-milestone__index">0{index + 1}</span>
+                <div class="how-lifecycle-milestone__body">
+                  <span class="how-lifecycle-milestone__age">{milestone.age}</span>
+                  <h3>{milestone.title}</h3>
+                  <p>{milestone.copy}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div class="how-equation">
+            <span>Federal seed</span>
+            <b>+</b>
+            <span>Family savings</span>
+            <b>+</b>
+            <span>Employer match</span>
+            <b>+</b>
+            <span>Market compounding</span>
+            <b>=</b>
+            <span>Age-18 balance</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="container section-spacing" style="padding-top: 0;">
+      <div class="section-frame">
+        <div class="section-intro">
+          <span class="section-kicker">Lifecycle</span>
+          <h2 class="section-title">Three stages define the account.</h2>
+          <p class="section-copy">
+            The page is easier to use when the process is reduced to the decisions that actually matter:
+            establish the account, fund it over time, then interpret the age-18 transition correctly.
+          </p>
+        </div>
+
+        <div class="how-sequence">
+          {lifecycle.map((stage) => (
+            <article class="how-stage">
+              <div class={`how-stage__number is-${stage.tone}`}>{stage.step}</div>
+              <div class="how-stage__content">
+                <span class="how-stage__eyebrow">{stage.eyebrow}</span>
+                <h3>{stage.title}</h3>
+                <p>{stage.copy}</p>
+                <ul class="how-stage__points">
+                  {stage.points.map((point) => (
+                    <li>{point}</li>
+                  ))}
+                </ul>
+              </div>
+              <div class={`how-stage__tag is-${stage.tone}`}>{stage.tag}</div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="container section-spacing" style="padding-top: 0;">
+      <div class="section-frame section-frame--split how-framework">
+        <div>
+          <div class="section-intro how-framework__intro">
+            <span class="section-kicker">Model Logic</span>
+            <h2 class="section-title">What the calculator actually changes.</h2>
+            <p class="section-copy">
+              The simulator is not a black box. These inputs are the pieces that move the result when a user
+              adjusts the planner.
+            </p>
+          </div>
+
+          <div class="how-driver-list">
+            {drivers.map((driver) => (
+              <article class="how-driver">
+                <span class="how-driver__value">{driver.value}</span>
+                <div class="how-driver__body">
+                  <h3>{driver.title}</h3>
+                  <p>{driver.copy}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div class="how-output-panel">
+          <span class="section-kicker">Reading the Output</span>
+          <h2 class="how-output-panel__title">What each result actually means.</h2>
+          <p class="how-output-panel__copy">
+            The calculator is easiest to trust when the readout is explicit about what it is showing and what it is not.
+          </p>
+
+          <div class="how-output-list">
+            {outputs.map((output, index) => (
+              <article class="how-output">
+                <span class="how-output__index">0{index + 1}</span>
+                <div class="how-output__body">
+                  <h3>{output.title}</h3>
+                  <p>{output.copy}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <a class="how-inline-link" href={base}>
+            Open the calculator
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="container section-spacing" style="padding-top: 0;">
+      <div class="section-frame">
+        <div class="section-intro">
+          <span class="section-kicker">Watchpoints</span>
+          <h2 class="section-title">A few rules are still moving.</h2>
+          <p class="section-copy">
+            The projection assumes clean execution, but families should still treat these topics as live policy variables.
+          </p>
+        </div>
+
+        <div class="how-watch-grid">
+          {watchpoints.map((watchpoint) => (
+            <article class="how-watch-item">
+              <span class="how-watch-item__pill">{watchpoint.pill}</span>
+              <h3>{watchpoint.title}</h3>
+              <p>{watchpoint.copy}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  </section>
+</AppLayout>

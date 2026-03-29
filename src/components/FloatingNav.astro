@@ -1,0 +1,42 @@
+---
+import ThemeToggle from './ThemeToggle';
+
+interface NavItem {
+  id: 'calculator' | 'faq' | 'how-it-works' | 'about-us';
+  label: string;
+  href: string;
+}
+
+const { activeTab } = Astro.props as { activeTab: NavItem['id'] };
+const baseUrl = import.meta.env.BASE_URL;
+
+const navItems: NavItem[] = [
+  { id: 'calculator', label: 'Calculator', href: baseUrl },
+  { id: 'faq', label: 'FAQ', href: `${baseUrl}faq/` },
+  { id: 'how-it-works', label: 'How it Works', href: `${baseUrl}how-it-works/` },
+  { id: 'about-us', label: 'About Us', href: `${baseUrl}about-us/` }
+];
+---
+
+<div class="floating-nav-shell">
+  <header class="floating-nav">
+    <a class="floating-nav__brand" href={baseUrl} aria-label="Open the calculator home page">
+      <span class="floating-nav__eyebrow">College Savings</span>
+      <span class="floating-nav__title">Planner</span>
+    </a>
+
+    <nav class="floating-nav__tabs" aria-label="Site sections">
+      {navItems.map((item) => (
+        <a
+          href={item.href}
+          class={`floating-nav__tab ${activeTab === item.id ? 'is-active' : ''}`}
+          aria-current={activeTab === item.id ? 'page' : undefined}
+        >
+          {item.label}
+        </a>
+      ))}
+    </nav>
+
+    <ThemeToggle client:load embedded />
+  </header>
+</div>

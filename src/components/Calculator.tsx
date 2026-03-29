@@ -1,6 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { simulateCollegeSavings, type UniversityType } from '../lib/calculator';
+import React, { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import {
+  simulateCollegeSavings,
+  type CalculatorInput,
+  type SimulationOutput,
+  type SimulationPoint,
+  type UniversityType
+} from '../lib/calculator';
 
 interface Props {
   historicalMeanReturn: number;
@@ -8,63 +15,246 @@ interface Props {
   dataRangeConfig: string;
 }
 
+interface WorkerResponse {
+  requestId: number;
+  result: SimulationOutput;
+}
+
+const MIN_CALCULATION_DISPLAY_MS = 1500;
+
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
   useEffect(() => {
-    const handler = setTimeout(() => {
+    const handler = window.setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
-    return () => clearTimeout(handler);
+
+    return () => window.clearTimeout(handler);
   }, [value, delay]);
+
   return debouncedValue;
 }
 
 export default function Calculator({ historicalMeanReturn, historicalVolatility, dataRangeConfig }: Props) {
-  // Switched back to ANNUAL contribution as per original user request
-  const [annualContribution, setAnnualContribution] = useState<number>(5000);
-  const debouncedAnnual = useDebounce(annualContribution, 150);
-  
-  const [employerMatchAnnual, setEmployerMatchAnnual] = useState<number>(0);
-  const debouncedMatch = useDebounce(employerMatchAnnual, 150);
-  
+  const [annualContribution, setAnnualContribution] = useState(5000);
+  const [employerMatchAnnual, setEmployerMatchAnnual] = useState(0);
   const [universityType, setUniversityType] = useState<UniversityType>('public');
-  
   const [showSuccess, setShowSuccess] = useState(true);
   const [showFailure, setShowFailure] = useState(true);
+  const [isCalculating, setIsCalculating] = useState(false);
 
-  const { scatterPoints, expectedTuition, medianSavings, successRate } = useMemo(() => {
-    return simulateCollegeSavings({ 
-      annualContribution: debouncedAnnual, 
-      employerMatchAnnual: debouncedMatch,
-      universityType, 
+  const debouncedAnnual = useDebounce(annualContribution, 160);
+  const debouncedMatch = useDebounce(employerMatchAnnual, 160);
+
+  const [simulation, setSimulation] = useState<SimulationOutput>(() =>
+    simulateCollegeSavings({
+      annualContribution: 5000,
+      employerMatchAnnual: 0,
+      universityType: 'public',
       yearsToMatriculation: 18,
       historicalMeanReturn,
       historicalVolatility
-    });
+    })
+  );
+
+  const workerRef = useRef<Worker | null>(null);
+  const requestIdRef = useRef(0);
+  const hasInitializedEffect = useRef(false);
+  const busyTimeoutRef = useRef<number | null>(null);
+  const fallbackTimeoutRef = useRef<number | null>(null);
+  const requestStartedAtRef = useRef(0);
+
+  function clearBusyTimeout() {
+    if (busyTimeoutRef.current) {
+      window.clearTimeout(busyTimeoutRef.current);
+      busyTimeoutRef.current = null;
+    }
+  }
+
+  function clearFallbackTimeout() {
+    if (fallbackTimeoutRef.current) {
+      window.clearTimeout(fallbackTimeoutRef.current);
+      fallbackTimeoutRef.current = null;
+    }
+  }
+
+  function terminateWorker() {
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
+    }
+  }
+
+  function cancelInFlightCalculation(resetBusyState = true) {
+    clearBusyTimeout();
+    clearFallbackTimeout();
+    terminateWorker();
+
+    if (resetBusyState) {
+      setIsCalculating(false);
+    }
+  }
+
+  function scheduleResultCommit(requestId: number, result: SimulationOutput) {
+    const elapsed = Date.now() - requestStartedAtRef.current;
+    const remaining = Math.max(0, MIN_CALCULATION_DISPLAY_MS - elapsed);
+
+    clearBusyTimeout();
+    busyTimeoutRef.current = window.setTimeout(() => {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
+      startTransition(() => {
+        setSimulation(result);
+      });
+      setIsCalculating(false);
+      busyTimeoutRef.current = null;
+    }, remaining);
+  }
+
+  function startWorkerCalculation(requestId: number, input: CalculatorInput) {
+    if (typeof window === 'undefined' || typeof Worker === 'undefined') {
+      return false;
+    }
+
+    const worker = new Worker(new URL('../workers/calculator.worker.ts', import.meta.url), { type: 'module' });
+    workerRef.current = worker;
+
+    worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+      const { requestId: completedRequestId, result } = event.data;
+
+      if (workerRef.current === worker) {
+        workerRef.current = null;
+      }
+      worker.terminate();
+
+      if (completedRequestId !== requestIdRef.current) {
+        return;
+      }
+
+      scheduleResultCommit(completedRequestId, result);
+    };
+
+    worker.postMessage({ requestId, input });
+    return true;
+  }
+
+  useEffect(() => {
+    return () => {
+      cancelInFlightCalculation(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasInitializedEffect.current) {
+      return;
+    }
+
+    if (annualContribution === debouncedAnnual && employerMatchAnnual === debouncedMatch) {
+      return;
+    }
+
+    cancelInFlightCalculation();
+  }, [annualContribution, employerMatchAnnual, debouncedAnnual, debouncedMatch]);
+
+  useEffect(() => {
+    if (!hasInitializedEffect.current) {
+      hasInitializedEffect.current = true;
+      return;
+    }
+
+    const nextInput: CalculatorInput = {
+      annualContribution: debouncedAnnual,
+      employerMatchAnnual: debouncedMatch,
+      universityType,
+      yearsToMatriculation: 18,
+      historicalMeanReturn,
+      historicalVolatility
+    };
+
+    const nextRequestId = requestIdRef.current + 1;
+    requestIdRef.current = nextRequestId;
+    cancelInFlightCalculation(false);
+    requestStartedAtRef.current = Date.now();
+    setIsCalculating(true);
+
+    if (startWorkerCalculation(nextRequestId, nextInput)) {
+      return;
+    }
+
+    fallbackTimeoutRef.current = window.setTimeout(() => {
+      fallbackTimeoutRef.current = null;
+      const result = simulateCollegeSavings(nextInput);
+
+      if (nextRequestId !== requestIdRef.current) {
+        return;
+      }
+
+      scheduleResultCommit(nextRequestId, result);
+    }, 0);
+
+    return () => {
+      cancelInFlightCalculation(false);
+    };
   }, [debouncedAnnual, debouncedMatch, universityType, historicalMeanReturn, historicalVolatility]);
 
-  const isStale = annualContribution !== debouncedAnnual || employerMatchAnnual !== debouncedMatch;
+  const deferredPoints = useDeferredValue(simulation.scatterPoints);
+  const isSettlingInput = annualContribution !== debouncedAnnual || employerMatchAnnual !== debouncedMatch;
+  const showCalculatorState = isCalculating || isSettlingInput;
 
-  const displayedData = useMemo(() => {
-    return scatterPoints.filter(p => {
-      if (p.isSuccess && !showSuccess) return false;
-      if (!p.isSuccess && !showFailure) return false;
-      return true;
+  const filteredPoints = useMemo(() => {
+    const successPoints: SimulationPoint[] = [];
+    const shortfallPoints: SimulationPoint[] = [];
+
+    deferredPoints.forEach((point) => {
+      if (point.isSuccess) {
+        if (showSuccess) {
+          successPoints.push(point);
+        }
+        return;
+      }
+
+      if (showFailure) {
+        shortfallPoints.push(point);
+      }
     });
-  }, [scatterPoints, showSuccess, showFailure]);
 
-  const formatCurrency = (val: number) => 
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+    return { successPoints, shortfallPoints };
+  }, [deferredPoints, showSuccess, showFailure]);
+
+  const successCount = useMemo(
+    () => simulation.scatterPoints.reduce((count, point) => count + (point.isSuccess ? 1 : 0), 0),
+    [simulation.scatterPoints]
+  );
+  const totalPaths = simulation.scatterPoints.length;
+  const shortfallCount = totalPaths - successCount;
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(value);
+
+  const formatCompactCurrency = (value: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      notation: 'compact',
+      maximumFractionDigits: value >= 1000000 ? 1 : 0
+    }).format(value);
 
   return (
     <div className="app-layout">
-      {/* Sidebar Inputs */}
       <aside className="sidebar">
         <h1 style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '-0.5px', marginBottom: '8px' }}>
           Future College Savings
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '32px', lineHeight: 1.5 }}>
-          Monte-Carlo simulations generating 1,000 parallel 18-year realities based on real S&P 500 volatility ({dataRangeConfig}).
+          Monte-Carlo simulations generating 1,000 parallel 18-year realities based on real S&amp;P 500
+          volatility ({dataRangeConfig}).
         </p>
 
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -86,34 +276,42 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>University Target</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                University Target
+              </span>
             </div>
-            <div className="apple-segmented-control">
-              <div 
+            <div className="apple-segmented-control" data-testid="uni-select">
+              <button
+                type="button"
                 className={`apple-segmented-item ${universityType === 'public' ? 'active' : ''}`}
                 onClick={() => setUniversityType('public')}
+                aria-pressed={universityType === 'public'}
               >
                 Top Public
-              </div>
-              <div 
+              </button>
+              <button
+                type="button"
                 className={`apple-segmented-item ${universityType === 'private' ? 'active' : ''}`}
                 onClick={() => setUniversityType('private')}
+                aria-pressed={universityType === 'private'}
               >
                 Top Private
-              </div>
+              </button>
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Family Annual Input</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Family Annual Input
+              </span>
               <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>${annualContribution.toLocaleString()}</span>
             </div>
-            <input 
-              type="range" 
+            <input
+              type="range"
               className="apple-slider"
               value={annualContribution}
-              onChange={(e) => setAnnualContribution(Number(e.target.value))}
+              onChange={(event) => setAnnualContribution(Number(event.target.value))}
               min="0"
               max="20000"
               step="500"
@@ -123,14 +321,16 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Employer Match</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Employer Match
+              </span>
               <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--accent-emerald)' }}>+ ${employerMatchAnnual.toLocaleString()}</span>
             </div>
-            <input 
-              type="range" 
+            <input
+              type="range"
               className="apple-slider"
               value={employerMatchAnnual}
-              onChange={(e) => setEmployerMatchAnnual(Number(e.target.value))}
+              onChange={(event) => setEmployerMatchAnnual(Number(event.target.value))}
               min="0"
               max="10000"
               step="500"
@@ -141,70 +341,204 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
 
         <div className="projection-box" style={{ background: 'transparent', padding: 0, marginTop: '16px', border: 'none' }}>
           <div className="glass-panel" style={{ background: 'rgba(79, 143, 247, 0.05)', borderColor: 'rgba(79, 143, 247, 0.2)', marginBottom: 0 }}>
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent-blue)' }}>Simulation Results</h3>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
-              <span style={{color: 'var(--text-muted)'}}>Median End Balance:</span>
-              <strong style={{color: 'var(--text-main)'}}>{formatCurrency(medianSavings)}</strong>
+            <div className="calculator-summary__header">
+              <h3 style={{ margin: 0, fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent-blue)' }}>
+                Simulation Results
+              </h3>
+              <span className={`calculator-status-pill ${showCalculatorState ? 'is-busy' : ''}`}>
+                {showCalculatorState ? 'Calculating' : 'Live'}
+              </span>
             </div>
-             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', fontSize: '14px' }}>
-              <span style={{color: 'var(--text-muted)'}}>Est. 4-Year Tuition:</span>
-              <strong style={{color: 'var(--text-main)'}}>{formatCurrency(expectedTuition)}</strong>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Median End Balance:</span>
+              <strong style={{ color: 'var(--text-main)' }}>{formatCurrency(simulation.medianSavings)}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', fontSize: '14px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Est. 4-Year Tuition:</span>
+              <strong style={{ color: 'var(--text-main)' }}>{formatCurrency(simulation.expectedTuition)}</strong>
             </div>
             <div style={{ height: '1px', background: 'var(--border-light)', margin: '16px 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{color: 'var(--text-main)', fontWeight: 500}}>Success Rate:</span>
-              <strong style={{fontSize: '24px', letterSpacing: '-0.02em', color: successRate > 50 ? 'var(--accent-emerald)' : 'var(--accent-orange)'}}>{successRate.toFixed(1)}%</strong>
+              <span style={{ color: 'var(--text-main)', fontWeight: 500 }}>Success Rate:</span>
+              <strong
+                style={{
+                  fontSize: '24px',
+                  letterSpacing: '-0.02em',
+                  color: simulation.successRate > 50 ? 'var(--accent-emerald)' : 'var(--accent-orange)'
+                }}
+              >
+                {simulation.successRate.toFixed(1)}%
+              </strong>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Main Area */}
       <main className="main-chart-area">
-        <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '32px' }}>
-          Simulated Wealth vs Target Tuition (18 Years)
-        </h2>
-        
-        <div className="card" style={{ flex: 1, minHeight: '400px', position: 'relative', opacity: isStale ? 0.5 : 1, transition: 'opacity 0.2s', filter: isStale ? 'grayscale(0.6)' : 'none' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 30 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis 
-                dataKey="savingsBalance" 
-                type="number" 
-                name="Projected Savings"
-                tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} 
-                stroke="var(--text-muted)"
-                domain={['auto', 'auto']}
-              >
-              </XAxis>
-              <YAxis 
-                dataKey="tuitionCost" 
-                type="number" 
-                name="Projected Tuition"
-                tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} 
-                stroke="var(--text-muted)"
-                domain={['auto', 'auto']}
-              />
-              <Tooltip cursor={{strokeDasharray: '3 3'}} content={({active, payload}) => {
-                if (active && payload && payload.length) {
-                  return (
-                    <div style={{ background: 'var(--bg-card-hover)', padding: '12px', border: '1px solid var(--border-light)', borderRadius: '8px', boxShadow: 'var(--shadow-glass)'}}>
-                      <p style={{ margin: '0 0 4px', fontWeight: 600, color: 'var(--text-main)' }}>Savings: {formatCurrency(payload[0].payload.savingsBalance)}</p>
-                      <p style={{ margin: 0, color: 'var(--text-muted)' }}>Tuition: {formatCurrency(payload[0].payload.tuitionCost)}</p>
-                    </div>
-                  );
-                }
-                return null;
-              }} />
-              
-              <Scatter name="Successful" data={displayedData.filter(d => d.isSuccess)} fill="var(--accent-emerald)" shape="circle" fillOpacity={0.8} />
-              <Scatter name="Falling Short" data={displayedData.filter(d => !d.isSuccess)} fill="var(--text-muted)" shape="circle" fillOpacity={0.8} />
-              
-            </ScatterChart>
-          </ResponsiveContainer>
+        <div className="calculator-chart__header">
+          <div>
+            <span className="calculator-chart__eyebrow">Scenario field</span>
+            <h2 className="calculator-chart__title">Where 1,000 college outcomes land</h2>
+            <p className="calculator-chart__copy">
+              Each point is one simulated 18-year path. Median savings and median tuition are marked so the cloud is easier to read.
+            </p>
           </div>
+          <div className="calculator-chart__header-side">
+            <span className={`calculator-status-pill ${showCalculatorState ? 'is-busy' : ''}`}>
+              {showCalculatorState ? 'Refreshing projections' : 'Updated'}
+            </span>
+            <div className="calculator-chart__legend">
+              <span className={`calculator-chart__legend-item ${showSuccess ? '' : 'is-muted'}`}>
+                <i className="calculator-chart__legend-swatch calculator-chart__legend-swatch--success" />
+                Funded paths
+                <strong>{successCount}</strong>
+              </span>
+              <span className={`calculator-chart__legend-item ${showFailure ? '' : 'is-muted'}`}>
+                <i className="calculator-chart__legend-swatch calculator-chart__legend-swatch--shortfall" />
+                Shortfall paths
+                <strong>{shortfallCount}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className={`calculator-chart-shell ${showCalculatorState ? 'is-busy' : ''}`}>
+          <div className="calculator-chart-shell__glow calculator-chart-shell__glow--top" />
+          <div className="calculator-chart-shell__glow calculator-chart-shell__glow--bottom" />
+
+          <div className="calculator-chart-meta">
+            <div className="calculator-chart-meta__item">
+              <span>Median savings</span>
+              <strong>{formatCompactCurrency(simulation.medianSavings)}</strong>
+            </div>
+            <div className="calculator-chart-meta__item">
+              <span>Median tuition</span>
+              <strong>{formatCompactCurrency(simulation.expectedTuition)}</strong>
+            </div>
+            <div className="calculator-chart-meta__item">
+              <span>Paths funded</span>
+              <strong>
+                {successCount} / {totalPaths}
+              </strong>
+            </div>
+          </div>
+
+          <div className="calculator-chart-stage">
+            <div className="calculator-chart-stage__wash calculator-chart-stage__wash--shortfall" />
+            <div className="calculator-chart-stage__wash calculator-chart-stage__wash--success" />
+            <span className="calculator-chart-stage__label calculator-chart-stage__label--top">Higher tuition pressure</span>
+            <span className="calculator-chart-stage__label calculator-chart-stage__label--bottom">Stronger savings outcomes</span>
+
+            <div className="calculator-chart-surface">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 54, right: 24, bottom: 56, left: 10 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="4 12" stroke="var(--chart-grid)" />
+                  <ReferenceLine
+                    x={simulation.medianSavings}
+                    stroke="var(--chart-guide-blue)"
+                    strokeDasharray="5 7"
+                    ifOverflow="extendDomain"
+                  />
+                  <ReferenceLine
+                    y={simulation.expectedTuition}
+                    stroke="var(--chart-guide-orange)"
+                    strokeDasharray="5 7"
+                    ifOverflow="extendDomain"
+                  />
+                  <XAxis
+                    dataKey="savingsBalance"
+                    type="number"
+                    name="Projected Savings"
+                    tickFormatter={formatCompactCurrency}
+                    stroke="var(--text-soft)"
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={12}
+                    fontSize={12}
+                    domain={['auto', 'auto']}
+                  />
+                  <YAxis
+                    dataKey="tuitionCost"
+                    type="number"
+                    name="Projected Tuition"
+                    tickFormatter={formatCompactCurrency}
+                    stroke="var(--text-soft)"
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={10}
+                    fontSize={12}
+                    domain={['auto', 'auto']}
+                  />
+                  <Tooltip
+                    cursor={false}
+                    content={({ active, payload }) => {
+                      const point = payload?.[0]?.payload as SimulationPoint | undefined;
+
+                      if (active && point) {
+                        return (
+                          <div className="calculator-tooltip">
+                            <span className={`calculator-tooltip__eyebrow ${point.isSuccess ? 'is-success' : 'is-shortfall'}`}>
+                              {point.isSuccess ? 'Funded path' : 'Shortfall path'}
+                            </span>
+                            <div className="calculator-tooltip__row">
+                              <span>Projected fund</span>
+                              <strong>{formatCurrency(point.savingsBalance)}</strong>
+                            </div>
+                            <div className="calculator-tooltip__row">
+                              <span>Projected tuition</span>
+                              <strong>{formatCurrency(point.tuitionCost)}</strong>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    }}
+                  />
+
+                  <Scatter
+                    name="Successful"
+                    data={filteredPoints.successPoints}
+                    fill="var(--chart-success-dot)"
+                    stroke="rgba(16, 185, 129, 0.2)"
+                    strokeWidth={0.6}
+                    shape="circle"
+                    isAnimationActive={false}
+                  />
+                  <Scatter
+                    name="Falling Short"
+                    data={filteredPoints.shortfallPoints}
+                    fill="var(--chart-shortfall-dot)"
+                    stroke="rgba(138, 147, 166, 0.16)"
+                    strokeWidth={0.5}
+                    shape="circle"
+                    isAnimationActive={false}
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {showCalculatorState ? (
+              <motion.div
+                className="calculator-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+              >
+                <div className="calculator-overlay__panel">
+                  <span className="calculator-overlay__eyebrow">Calculating</span>
+                  <strong>Repricing 1,000 market paths</strong>
+                  <p>Keeping the current chart visible while the next scenario set finishes in the background.</p>
+                  <div className="calculator-overlay__progress">
+                    <span />
+                  </div>
+                </div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
         </div>
       </main>
     </div>

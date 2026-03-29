@@ -1,14 +1,7 @@
 ---
+import AppLayout from '../layouts/AppLayout.astro';
 import Hero from '../components/Hero';
-import PolicyCards from '../components/PolicyCards';
-import ClaimMechanics from '../components/ClaimMechanics';
 import Calculator from '../components/Calculator';
-import IncomeTiers from '../components/IncomeTiers';
-import PolicyUncertainty from '../components/PolicyUncertainty';
-import Age18Transition from '../components/Age18Transition';
-import NationalImpact from '../components/NationalImpact';
-import ThemeToggle from '../components/ThemeToggle';
-import '../styles/global.css';
 
 import YahooFinance from 'yahoo-finance2';
 const yahooFinance = new YahooFinance();
@@ -49,65 +42,32 @@ try {
    console.error("[Astro Build] Using fallback parameters for SP500 due to Yahoo Finance error", e);
 }
 
-const title = "Trump Account (530A) Policy Dashbard";
-const description = "Explore the Generational Wealth Multiplier Effect using realistic Yahoo Finance Monte Carlo data.";
+const title = "College Savings Calculator | Section 530A Planner";
+const description = "Explore an Apple-inspired college savings planner using Monte Carlo projections grounded in historical Yahoo Finance market data.";
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <script is:inline>
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    </script>
-  </head>
-  <body>
-    <!-- Top-level background container for ultra dark aesthetics -->
-    <div style={{ background: 'var(--page-glow)', minHeight: '100vh', position: 'relative' }}>
-      
-      <ThemeToggle client:only="react" />
-      
-      <Hero client:load dataRangeConfig={dataRangeConfig} />
-      
-      <PolicyCards client:load />
-      
-      <ClaimMechanics client:load />
+<AppLayout activeTab="calculator" title={title} description={description}>
+  <section class="route-page route-page--calculator">
+    <Hero client:load dataRangeConfig={dataRangeConfig} />
 
-      <section className="container section-spacing" id="calculator">
-        <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-          <h2 style={{ fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 700, margin: '0 0 16px', letterSpacing: '-0.02em' }}>
-            Test the <span className="text-gradient">Policy Leverage</span>
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '18px', maxWidth: '600px', margin: '0 auto' }}>
-            Interact with a completely un-opinionated Monte Carlo simulation using the raw volatility of the S&P 500 history.
+    <section class="container section-spacing" style="padding-top: 0;">
+      <div class="section-frame section-frame--calculator">
+        <div class="section-intro">
+          <span class="section-kicker">Calculator</span>
+          <h2 class="section-title">The planner opens directly in the simulator.</h2>
+          <p class="section-copy">
+            Each tab is now its own route, so users can switch between the calculator, FAQ, mechanics, and
+            project background without staying inside one uninterrupted scroll.
           </p>
         </div>
-        
-        <Calculator 
-          client:load 
-          historicalMeanReturn={historicalMeanReturn} 
-          historicalVolatility={historicalVolatility} 
-          dataRangeConfig={dataRangeConfig} 
+
+        <Calculator
+          client:only="react"
+          historicalMeanReturn={historicalMeanReturn}
+          historicalVolatility={historicalVolatility}
+          dataRangeConfig={dataRangeConfig}
         />
-      </section>
-
-      <IncomeTiers client:load />
-      
-      <PolicyUncertainty client:load />
-      
-      <Age18Transition client:load />
-      
-      <NationalImpact client:load />
-
-      <footer style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)', borderTop: '1px solid var(--border-light)' }}>
-        <p style={{ fontSize: '14px', maxWidth: '600px', margin: '0 auto', lineHeight: 1.6 }}>
-          Data sourced from ^GSPC Yahoo Finance. Policy metrics mapped against Federal Register Proposed Regulations (Section 530A OBBBA).
-        </p>
-      </footer>
-    </div>
-  </body>
-</html>
+      </div>
+    </section>
+  </section>
+</AppLayout>

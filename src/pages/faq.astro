@@ -1,0 +1,14 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import FaqSection from '../components/FaqSection';
+---
+
+<AppLayout
+  activeTab="faq"
+  title="FAQ | College Savings Calculator"
+  description="Review the most common questions about the college savings policy, eligibility assumptions, and calculator methodology."
+>
+  <section class="route-page">
+    <FaqSection client:load />
+  </section>
+</AppLayout>

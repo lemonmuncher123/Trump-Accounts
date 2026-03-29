@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ embedded = false }: { embedded?: boolean }) {
   const [theme, setTheme] = useState('dark');
 
   useEffect(() => {
@@ -20,26 +20,9 @@ export default function ThemeToggle() {
   };
 
   return (
-    <button 
+    <button
       onClick={toggleTheme}
-      style={{
-        position: 'absolute',
-        top: '24px',
-        right: '24px',
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-light)',
-        color: 'var(--text-main)',
-        width: '44px',
-        height: '44px',
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        boxShadow: 'var(--shadow-glass)',
-        zIndex: 100,
-        transition: 'all 0.3s ease'
-      }}
+      className={`theme-toggle ${embedded ? 'theme-toggle--embedded' : 'theme-toggle--floating'}`}
       aria-label="Toggle Theme"
     >
       {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
