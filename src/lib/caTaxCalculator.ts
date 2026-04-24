@@ -408,11 +408,12 @@ export function runTaxModel(input: TaxModelInput): TaxModelOutput {
   // No early withdrawal penalty (qualified education use assumed).
 
   // Terminal CA tax on deferred Trump Account gains (when annual kiddie tax is off).
-  // CA basis = totalC × years (both employer and individual contributions are CA-taxed
-  // via Layer 1; only the growth portion + untaxed seed are taxable at distribution).
+  // CA basis = totalC × years + seed (both employer and individual contributions are
+  // CA-taxed via Layer 1; the seed is not CA income per FTB, so it is also basis).
   let trumpTerminalCaTax = 0;
   if (!includeAnnualCaKiddieTax) {
-    const caBasis        = totalC * years;
+    const seed           = input.initialSeed ?? 0;
+    const caBasis        = totalC * years + seed;
     const trumpGainForCa = Math.max(0, trumpBalance - caBasis);
     trumpTerminalCaTax   = californiaIncrementalTax(baseCaIncome + totalC, trumpGainForCa, filingStatus);
     trumpTotalCa        += trumpTerminalCaTax;

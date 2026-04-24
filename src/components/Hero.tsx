@@ -17,7 +17,7 @@ export default function Hero({ dataRangeConfig }: HeroProps) {
         transition={{ duration: 0.8, ease: 'easeOut' }}
       >
         <div className="hero-copy">
-          <div className="badge">Stable Investing / 18-Year Horizon</div>
+          <div className="badge">Stable Investing / Up to 18-Year Horizon</div>
           <h1 className="hero-title">
             Your child's future
             <br />
@@ -25,11 +25,11 @@ export default function Hero({ dataRangeConfig }: HeroProps) {
           </h1>
           <p className="hero-subtitle">
             Model a Trump Account, then scroll down to see why decades of research say the same thing:
-            low-cost index funds and consistent contributions beat everything else over 18 years.
+            low-cost index funds and consistent contributions beat everything else over a long horizon.
           </p>
           <div className="hero-inline-meta">
             <span>1,000 market paths</span>
-            <span>18-year horizon</span>
+            <span>Up to 18-year horizon</span>
             <span>{dataRangeConfig} data window</span>
           </div>
           <p className="hero-meta">Historical S&amp;P 500 behavior powers the baseline return and volatility assumptions.</p>
@@ -78,7 +78,7 @@ export default function Hero({ dataRangeConfig }: HeroProps) {
           <div className="hero-preview__metrics" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
             <div>
               <span>Growth window</span>
-              <strong>18 years</strong>
+              <strong>Up to 18 yrs</strong>
             </div>
             <div>
               <span>Simulated paths</span>

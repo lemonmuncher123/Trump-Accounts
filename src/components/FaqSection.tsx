@@ -5,7 +5,7 @@ const faqs = [
   {
     question: 'Who is eligible to open a Trump Account, and who receives the $1,000 federal contribution?',
     answer:
-      'Two different rules are at work. Under current federal guidance, any U.S. child under age 18 with a Social Security Number can have a Trump Account once an approved custodian offers one. The one-time $1,000 federal contribution, however, is part of a limited pilot program for U.S.-citizen children born between January 1, 2025 and December 31, 2028. This calculator assumes the modeled child receives that pilot deposit, which is a simplifying assumption rather than a universal entitlement.'
+      'Two different rules are at work. Under current federal guidance, any U.S. child under age 18 with a Social Security Number can have a Trump Account once an approved custodian offers one. The one-time $1,000 federal contribution, however, is part of a limited pilot program for U.S.-citizen children born between January 1, 2025 and December 31, 2028. The calculator models the deposit only when the selected birth year falls in 2025–2028, while actual receipt still depends on election and IRS requirements.'
   },
   {
     question: 'Does this calculator assume every child receives the $1,000 federal contribution?',
@@ -15,7 +15,7 @@ const faqs = [
   {
     question: 'Is the $1,000 federal contribution automatic?',
     answer:
-      'Under proposed federal regulations issued in 2025, the contribution is described as a one-time deposit linked to the pilot window and is distinct from family or employer contributions. It is not yet clear that every eligible child will receive it without an explicit election by a parent or guardian, and the rules around custodian setup and SSN confirmation are still being finalized. The calculator treats the deposit as received; readers should verify the live process before relying on it.'
+      'The seed is not automatic. Form 4547 or the official online process must be used, and Treasury deposits only after account confirmation. The contribution is a one-time deposit linked to the pilot window and is distinct from family or employer contributions. The calculator treats the deposit as received for eligible birth years; families should verify the live election process before relying on it.'
   },
   {
     question: 'What does employer matching actually change in the model?',

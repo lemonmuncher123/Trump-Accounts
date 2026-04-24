@@ -45,7 +45,7 @@ describe('Calculator React Component', () => {
   it('renders the core elements correctly', () => {
     render(<Calculator monthlyMean={0.0099} monthlyVol={0.0488} dataRangeConfig="1950-2024" />);
 
-    expect(screen.getByText(/Future College Savings/i)).toBeInTheDocument();
+    expect(screen.getByText(/530A Trump Account Calculator/i)).toBeInTheDocument();
     expect(screen.getByTestId('annual-input')).toBeInTheDocument();
     expect(screen.getByTestId('match-input')).toBeInTheDocument();
     expect(screen.getByTestId('birth-year-select')).toBeInTheDocument();

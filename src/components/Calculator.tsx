@@ -84,8 +84,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
 
   const birthYearInfo = computeBirthYearEligibility(childBirthYear);
   const { pilotSeedEligible, initialSeed, firstContributionYear, lastGrowthYear, distributionYear, eligibleForNewContributions } = birthYearInfo;
-  // Simulation needs at least 1 year; UI warns when eligibility is 0
-  const yearsToMatriculation = Math.max(1, birthYearInfo.contributionYears);
+  const yearsToMatriculation = birthYearInfo.contributionYears;
 
   const debouncedAnnual = useDebounce(annualContribution, 160);
   const debouncedMatch = useDebounce(employerMatchAnnual, 160);
@@ -270,7 +269,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
     const { employerC, otherC } = capContributions(debouncedMatch, debouncedAnnual);
     const totalC   = employerC + otherC;
     const basis    = yearsToMatriculation * otherC;
-    const caBasis  = yearsToMatriculation * totalC;
+    const caBasis  = yearsToMatriculation * totalC + initialSeed;
 
     return deferredPoints.map((pt, i) => {
       const federalDistTax = Math.max(0, pt.savingsBalance - basis) * childFutureRate;
@@ -287,7 +286,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
     const { employerC, otherC } = capContributions(debouncedMatch, debouncedAnnual);
     const totalC   = employerC + otherC;
     const basis    = yearsToMatriculation * otherC;
-    const caBasis  = yearsToMatriculation * totalC;
+    const caBasis  = yearsToMatriculation * totalC + initialSeed;
     const balances: number[] = [];
     let successCt = 0;
     for (const pt of simulation.scatterPoints) {
@@ -445,7 +444,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
               </div>
             )}
             <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.4, marginTop: '4px', opacity: 0.7 }}>
-              Calendar-year approximation. Actual eligibility requires valid SSN, U.S. citizenship, custodial setup, and federal election. Contributions begin no earlier than July 4, 2026.
+              Birth year estimates the contribution window and possible $1,000 pilot seed. Account eligibility requires a valid SSN and a federal election; the $1,000 pilot seed also requires U.S. citizenship, a 2025–2028 birth year, no prior pilot election, and successful account setup.
             </div>
           </div>
 

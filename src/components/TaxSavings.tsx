@@ -310,10 +310,10 @@ export default function TaxSavings({
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '20px', maxWidth: '700px' }}>
           Your Monte Carlo projects a median tuition bill of{' '}
           <strong style={{ color: 'var(--text-main)' }}>{fmt(expectedTuition)}</strong> at year {years}.
-          A Trump Account used for qualified education avoids the{' '}
-          <strong style={{ color: 'var(--accent-emerald)' }}>10% early withdrawal penalty</strong>; however, earnings above basis are still taxed as ordinary income at the child's rate.
-          By comparison, a taxable account must be fully liquidated and taxed at your marginal rate, requiring{' '}
-          <strong style={{ color: 'var(--accent-orange)' }}>{fmt(taxableGrossUp)}</strong> of pre-tax savings to net the same amount after your{' '}
+          Under proposed regulations, a Trump Account used for qualified education expenses may avoid the{' '}
+          <strong style={{ color: 'var(--accent-emerald)' }}>10% early withdrawal penalty</strong>; however, the earnings portion above basis would still be subject to ordinary income tax at the child's rate.
+          By comparison, funding the same tuition from pre-tax salary requires earning{' '}
+          <strong style={{ color: 'var(--accent-orange)' }}>{fmt(taxableGrossUp)}</strong> before your{' '}
           {(combinedMarginalRate * 100).toFixed(1)}% combined marginal rate ({(parentFederalRate * 100).toFixed(0)}% federal + {(effectiveCaRate * 100).toFixed(1)}% CA).
         </p>
 
@@ -328,12 +328,12 @@ export default function TaxSavings({
               note:    'What you actually owe',
             },
             {
-              label:   'Trump Account Needed',
+              label:   'Tuition Target',
               value:   expectedTuition,
               accent:  'var(--accent-emerald)',
               bg:      'rgba(16, 185, 129, 0.05)',
               border:  'rgba(16, 185, 129, 0.18)',
-              note:    'Penalty-free; earnings taxed at child rate',
+              note:    'Penalty-free for education; earnings still taxed',
             },
             {
               label:   'Taxable Account Needed',
@@ -368,7 +368,7 @@ export default function TaxSavings({
         </div>
 
         <div style={{ marginTop: '14px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          Gross-up formula: tuition ÷ (1 − combined marginal rate). This illustrates how much additional salary you would need to earn to net the tuition amount after ordinary income taxes. If paying from a taxable brokerage (LTCG rates), the premium would be smaller. Trump Account qualified education withdrawals avoid the 10% penalty; the taxable portion (earnings above basis) is still subject to ordinary income tax at the child's future rate.
+          Gross-up formula: tuition ÷ (1 − combined marginal rate). This illustrates how much pre-tax salary you would need to earn to net the tuition amount after ordinary income taxes. Funding from a taxable brokerage (LTCG rates) would require a smaller premium. Under proposed regulations, Trump Account qualified education withdrawals may avoid the 10% penalty; the taxable portion (earnings above basis) would still be subject to ordinary income tax at the child's future rate.
         </div>
       </div>}
     </section>

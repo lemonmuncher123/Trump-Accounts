@@ -6,8 +6,8 @@ export default function Age18Transition() {
   const cards = [
     {
       icon: <ArrowRightLeft size={32} />,
-      title: "Mandatory IRA Conversion",
-      desc: "In the tax year the child turns 18, the 530A account automatically converts into a standard Traditional IRA in the child's name.",
+      title: "Traditional IRA-Style Treatment",
+      desc: "After the growth period, proposed regulations indicate that traditional IRA rules generally apply to the account. The transition is not described as an automatic conversion into a separate IRA product.",
       color: "var(--accent-purple)"
     },
     {
@@ -31,7 +31,7 @@ export default function Age18Transition() {
           The Age 18 Transition: <span className="text-gradient" style={{ backgroundImage: 'linear-gradient(90deg, var(--accent-orange), var(--accent-purple))' }}>Tax Rules</span>
         </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '18px', maxWidth: '680px', margin: '0 auto' }}>
-          The Trump Account provides 18 years of uninterrupted, tax-deferred compounding. However, it is crucial to understand how the funds are treated once the beneficiary reaches adulthood.
+          The Trump Account provides up to 18 years of tax-deferred compounding. After the growth period, proposed regulations describe IRA-like treatment — understanding these rules helps families plan for the transition.
         </p>
       </div>
 

@@ -13,13 +13,13 @@ const cards = [
     icon: <ShieldCheck size={36} strokeWidth={1.5} className="text-purple" />,
     title: "Tax-Deferred Growth",
     tag: "Confirmed",
-    desc: "18 years of compounding without the 15% annual federal capital gains drag. Growth is tax-deferred, not permanently tax-free — earnings are taxed at distribution."
+    desc: "Up to 18 years of compounding without modeled annual federal capital-gains realization drag during the growth period. Growth is tax-deferred, not permanently tax-free — earnings are taxed at distribution."
   },
   {
     icon: <Handshake size={36} strokeWidth={1.5} className="text-emerald" />,
     title: "Employer Match",
     tag: "Pending Details",
-    desc: "Up to $2,500/yr matched by participating employers with the employer portion excluded from federal income via §128, turbocharging middle-class savings."
+    desc: "Up to $2,500 per employee per year may be excluded from federal income under a qualifying employer program, and it counts toward the $5,000 aggregate annual cap. Not all employers will offer this benefit."
   }
 ];
 

@@ -17,9 +17,9 @@ const risks = [
   },
   {
     icon: <Landmark size={24} className="text-emerald" />,
-    title: "Roth IRA Rollover",
+    title: "IRA-Style Treatment & ABLE Rollover",
     pill: "Awaiting Guidance",
-    desc: "Unused funds can be rolled into a Roth IRA at 18, but the IRS has reserved guidance on whether the original seeded $1,000 becomes fully taxable upon transfer."
+    desc: "After the growth period, proposed regulations describe traditional IRA-style treatment: contributions are basis, earnings are tax-deferred and taxed at distribution. An ABLE rollover option may be available during the age-17 calendar year; Roth conversion details remain reserved for future guidance."
   },
   {
     icon: <ShieldAlert size={24} className="text-purple" />,
@@ -37,7 +37,7 @@ export default function PolicyUncertainty() {
           Policy <span style={{ color: 'var(--accent-orange)' }}>Uncertainty</span>
         </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '16px', maxWidth: '800px', margin: '0 0 40px', lineHeight: 1.6 }}>
-          While the core mechanics of the Trump Account have been drafted, §§ 1.530A-2 through 1.530A-6 of the Proposed Regulations remain "reserved for future guidance." Our models assume frictionless execution, but families should be aware of these four pending variables before 2026.
+          While the core mechanics of the Trump Account have been drafted, §§ 1.530A-2 through 1.530A-6 of the Proposed Regulations remain "reserved for future guidance." Our models assume frictionless execution, but families should be aware of these four pending variables as the 2026 rollout and reserved guidance continue.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>

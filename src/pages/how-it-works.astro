@@ -7,7 +7,7 @@ const milestones = [
   {
     age: 'Birth',
     title: 'Modeled starter deposit',
-    copy: 'Each scenario assumes the $1,000 pilot deposit is already credited at year zero — true in practice only for U.S.-citizen children born 2025-2028.',
+    copy: 'Eligible 2025–2028 birth-year scenarios model the $1,000 pilot deposit at year zero; other birth years start with no federal seed.',
     tone: 'seed'
   },
   {
@@ -19,7 +19,7 @@ const milestones = [
   {
     age: 'Years 1-18',
     title: 'Compounding window',
-    copy: 'Family savings (capped at $5,000/yr) and optional employer contributions (up to $2,500/yr) compound across the full 18-year horizon.',
+    copy: 'Family savings (capped at $5,000/yr) and optional employer contributions (up to $2,500/yr) compound across up to 18 years, depending on the child\'s birth year.',
     tone: 'growth'
   },
   {
@@ -47,9 +47,9 @@ const lifecycle = [
   {
     step: '02',
     eyebrow: 'Growth',
-    title: 'Add family savings and let 18 years of compounding do the heavy lifting.',
+    title: 'Add family savings and let up to 18 years of compounding do the heavy lifting.',
     copy: 'The simulator treats the account as a long-duration savings runway: capped annual contributions, optional employer support, and market-style return paths.',
-    tag: '18-year runway',
+    tag: 'Up to 18 years',
     tone: 'growth',
     points: [
       'Total annual contributions are capped at $5,000 per year (current statutory limit), including both family and employer dollars.',
@@ -74,9 +74,14 @@ const lifecycle = [
 
 const drivers = [
   {
+    value: '2009–2028',
+    title: 'Child birth year',
+    copy: 'Determines whether the $1,000 pilot seed is included (2025–2028 only), when contributions begin (no earlier than 2026), and the transition year when the child turns 18.'
+  },
+  {
     value: '$1,000',
-    title: 'Modeled federal seed',
-    copy: 'Every scenario starts with the pilot deposit already credited at year zero (modeling assumption — pilot eligibility is limited to 2025-2028 birth years).'
+    title: 'Pilot federal seed',
+    copy: 'The $1,000 pilot deposit is credited at year zero only for birth years 2025–2028. Other birth years start with no seed.'
   },
   {
     value: 'Up to $5,000/yr',
@@ -156,9 +161,9 @@ const watchpoints = [
           <h1 class="section-title">One clear view of the account lifecycle, the model, and the result.</h1>
           <p class="section-copy">
             This page describes how the calculator models a Trump Account under current federal guidance and
-            proposed 2025 regulations. It is a planning illustration, not tax or legal advice — several inputs
-            (the $1,000 pilot deposit, the 18-year horizon, the return engine) are fixed modeling assumptions
-            rather than universal facts.
+            proposed 2025 regulations. It is a planning illustration, not tax or legal advice — the pilot deposit,
+            growth window, and return engine are modeling inputs shaped by the selected birth year,
+            not universal facts.
           </p>
 
           <div class="how-hero__meta">
@@ -167,8 +172,8 @@ const watchpoints = [
               <strong>$1,000</strong>
             </div>
             <div class="how-hero__meta-item">
-              <span>Modeled horizon</span>
-              <strong>18 years</strong>
+              <span>Growth window</span>
+              <strong>Up to 18 years</strong>
             </div>
             <div class="how-hero__meta-item">
               <span>Simulation depth</span>
@@ -251,9 +256,9 @@ const watchpoints = [
             <h2 class="section-title">What the calculator actually changes.</h2>
             <p class="section-copy">
               The simulator is not a black box. The drivers below are what a user can move; everything else
-              — the $1,000 pilot deposit, the 18-year window, monthly compounding using S&amp;P 500 statistics,
-              and the stochastic tuition growth — is held fixed across scenarios so two configurations stay
-              directly comparable.
+              — monthly compounding using S&amp;P 500 statistics and the stochastic tuition growth — is held
+              fixed across scenarios so two configurations stay directly comparable. The child's birth year
+              controls the seed, growth window, and transition year.
             </p>
           </div>
 

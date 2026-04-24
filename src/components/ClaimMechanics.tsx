@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { UserCheck, Hash, FileText, ShieldCheck } from 'lucide-react';
 
 const steps = [
-  { icon: <UserCheck size={28} />, title: "Verify Eligibility", desc: "Child must be a U.S. citizen born between Jan 1, 2025 – Dec 31, 2028." },
+  { icon: <UserCheck size={28} />, title: "Verify Pilot Seed Eligibility", desc: "The $1,000 pilot seed requires U.S. citizenship and a birth date between Jan 1, 2025 – Dec 31, 2028. General Trump Account eligibility is broader (any U.S. child under 18 with an SSN)." },
   { icon: <Hash size={28} />, title: "Secure an SSN", desc: "Ensure you have obtained the child's official Social Security Number." },
   { icon: <FileText size={28} />, title: "Make the Election", desc: "File the official election via IRS Form 4547 or official Treasury portal." },
   { icon: <ShieldCheck size={28} />, title: "Select a Custodian", desc: "Open the 530A account and select an approved low-cost U.S. index fund." }

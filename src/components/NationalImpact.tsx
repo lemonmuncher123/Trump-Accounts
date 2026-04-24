@@ -17,13 +17,13 @@ export default function NationalImpact() {
             <Globe2 size={18} /> Scale Impact
           </div>
           <h2 style={{ fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 800, margin: '0 0 24px', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-            One Generation's <br/><span className="text-gradient">Potential</span>
+            Illustrative <br/><span className="text-gradient">Adoption Scenario</span>
           </h2>
           <p style={{ fontSize: '18px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '24px' }}>
-            If 70% of the 3.63 million newborns each year use a Trump Account, the total generational wealth created in 18 years dwarfs anything previously conceived in educational aid.
+            The figures below assume 70% of the ~3.63 million annual newborns elect a Trump Account and max contributions for 18 years. Actual outcomes depend on election rates, employer adoption, taxes, financial-aid interactions, market returns, and withdrawal patterns — none of which are modeled here.
           </p>
-          <p style={{ fontSize: '16px', color: 'var(--text-main)', lineHeight: 1.6 }}>
-            It has the potential to solve the student debt crisis from the bottom up, without canceling a single loan.
+          <p style={{ fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.6, fontStyle: 'italic' }}>
+            This is a hypothetical illustration of potential scale, not a forecast.
           </p>
         </motion.div>
 
@@ -46,13 +46,13 @@ export default function NationalImpact() {
 
           <div className="glass-card" style={{ padding: '32px', borderColor: 'rgba(16,185,129,0.3)', boxShadow: '0 0 60px rgba(16,185,129,0.1)' }}>
             <div style={{ fontSize: '12px', color: 'var(--accent-emerald)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: 700 }}>
-              Projected Trump Account Funds (1 Cohort)
+              Illustrative Trump Account Funds (1 Cohort)
             </div>
             <div className="text-gradient-emerald" style={{ fontSize: '64px', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: '12px' }}>
               $360 Billion+
             </div>
-            <p style={{ margin: 0, fontSize: '15px', color: 'var(--text-main)' }}>
-              Ready to deploy for college in exactly 18 years, drastically reducing the demand for new federal aid.
+            <p style={{ margin: 0, fontSize: '15px', color: 'var(--text-muted)' }}>
+              Hypothetical pre-tax total assuming max contributions, 70% adoption, and average market returns over 18 years. Does not reflect actual elections, employer participation, taxes, financial aid, or withdrawals.
             </p>
           </div>
         </motion.div>
