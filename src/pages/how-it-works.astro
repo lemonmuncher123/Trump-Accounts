@@ -6,26 +6,26 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 const milestones = [
   {
     age: 'Birth',
-    title: 'Starter deposit',
-    copy: 'The planner begins with a federal seed deposit instead of a zero-dollar balance.',
+    title: 'Modeled starter deposit',
+    copy: 'Each scenario assumes the $1,000 pilot deposit is already credited at year zero — true in practice only for U.S.-citizen children born 2025-2028.',
     tone: 'seed'
   },
   {
     age: 'Setup',
     title: 'Account activation',
-    copy: 'Families should expect identity, citizenship, SSN, and custodian details to matter in practice.',
+    copy: 'In real life this still requires SSN, custodian onboarding, and — under proposed regulations — an explicit federal election to receive the pilot deposit.',
     tone: 'watch'
   },
   {
     age: 'Years 1-18',
     title: 'Compounding window',
-    copy: 'Family savings and any employer match are added across the full 18-year period.',
+    copy: 'Family savings (capped at $5,000/yr) and optional employer contributions (up to $2,500/yr) compound across the full 18-year horizon.',
     tone: 'growth'
   },
   {
     age: 'Age 18',
     title: 'IRA-style handoff',
-    copy: 'Once the child reaches adulthood, tax treatment and withdrawal rules become the next decision point.',
+    copy: 'Proposed regulations describe an IRA-like structure at adulthood: contributions are basis, earnings are tax-deferred, not tax-free.',
     tone: 'transition'
   }
 ];
@@ -34,40 +34,40 @@ const lifecycle = [
   {
     step: '01',
     eyebrow: 'Setup',
-    title: 'Establish the account and claim the starting deposit.',
-    copy: 'The policy is framed around a federally seeded account, but real use still depends on the practical setup flow.',
+    title: 'Establish the account and claim the modeled starting deposit.',
+    copy: 'Under current federal guidance the account is open to any U.S. child under 18 with an SSN; the $1,000 pilot deposit is a separate, narrower entitlement.',
     tag: 'Eligibility first',
     tone: 'seed',
     points: [
-      'Birth window and U.S. citizenship rules determine who qualifies.',
-      'Families should be ready for SSN, identity, and custodian requirements.',
-      'Some election and claiming details still depend on final implementation guidance.'
+      'Account eligibility: any U.S. child under 18 with a Social Security Number, once an approved custodian offers the product.',
+      'Pilot $1,000 deposit: limited to U.S.-citizen children born between 2025 and 2028.',
+      'Election and custodian onboarding details remain governed by proposed federal regulations issued in 2025.'
     ]
   },
   {
     step: '02',
     eyebrow: 'Growth',
-    title: 'Add family savings and let compounding do the heavy lifting.',
-    copy: 'The calculator treats the account as a long-duration savings runway rather than a one-time deposit.',
+    title: 'Add family savings and let 18 years of compounding do the heavy lifting.',
+    copy: 'The simulator treats the account as a long-duration savings runway: capped annual contributions, optional employer support, and market-style return paths.',
     tag: '18-year runway',
     tone: 'growth',
     points: [
-      'Annual family contributions are the largest controllable input.',
-      'Employer match can add meaningful lift when modeled or available.',
-      'Returns and volatility are replayed across many market-style paths instead of one fixed forecast.'
+      'Family contributions are capped at $5,000 per year (current statutory limit).',
+      'Employers may contribute up to $2,500 per year tax-free on top of the family cap.',
+      'Returns are sampled monthly (12 compounds per year) and replayed across 1,000 market-style paths.'
     ]
   },
   {
     step: '03',
     eyebrow: 'Transition',
-    title: 'Read the balance at age 18 under adult tax rules.',
-    copy: 'The final question is not just how much is there, but what rules apply once the beneficiary takes control.',
+    title: 'Read the at-18 balance, then layer the tax rules separately.',
+    copy: 'The Simulation tab shows the account balance at age 18. Federal and California tax treatment is layered on the Tax Analysis tab, not baked into the headline number.',
     tag: 'Age-18 handoff',
     tone: 'transition',
     points: [
-      'The route assumes an IRA-style transition at adulthood.',
-      'Education, first-home, and medical exceptions can matter for early access.',
-      'Rollover treatment, aid impact, and final tax handling still require close attention.'
+      'Proposed regulations describe an IRA-like structure: contributions are basis, earnings are tax-deferred.',
+      'Education, first-home, and medical uses qualify for an exception to the 10% early-withdrawal penalty.',
+      'Rollover, financial-aid (now SAI, not EFC), and final state tax handling still require close attention.'
     ]
   }
 ];
@@ -75,28 +75,28 @@ const lifecycle = [
 const drivers = [
   {
     value: '$1,000',
-    title: 'Federal seed',
-    copy: 'The projection starts with an initial deposit already in place.'
+    title: 'Modeled federal seed',
+    copy: 'Every scenario starts with the pilot deposit already credited at year zero (modeling assumption — pilot eligibility is limited to 2025-2028 birth years).'
   },
   {
-    value: 'Annual',
+    value: 'Up to $5,000/yr',
     title: 'Family savings',
-    copy: 'Your yearly contribution slider adds recurring deposits over the full 18-year timeline.'
+    copy: 'The annual contribution slider is capped at the current federal family limit of $5,000 per year.'
   },
   {
-    value: 'Match',
-    title: 'Employer support',
-    copy: 'Optional employer participation stacks on top of family contributions when modeled.'
+    value: 'Up to $2,500/yr',
+    title: 'Employer contribution',
+    copy: 'Employers may add up to $2,500 per year on top of the family cap; the slider models that statutory ceiling.'
   },
   {
     value: 'Public / Private',
     title: 'Tuition target',
-    copy: 'Changing the school target shifts the cost benchmark the account needs to meet.'
+    copy: 'A stochastic tuition path is grown from a 4-year base cost, so each simulated future faces its own inflation-adjusted bill.'
   },
   {
-    value: '1,000 paths',
-    title: 'Market uncertainty',
-    copy: 'The simulation reruns the plan across many return paths rather than one average-only outcome.'
+    value: '1,000 paths × 12/yr',
+    title: 'Return engine',
+    copy: 'Returns are drawn monthly from S&P 500 statistics and compounded 12 times per simulated year, replayed across 1,000 independent paths.'
   }
 ];
 
@@ -121,24 +121,24 @@ const outputs = [
 
 const watchpoints = [
   {
-    pill: 'Pending guidance',
+    pill: 'Proposed regulations',
     title: 'Claiming workflow',
-    copy: 'Draft materials suggest setup may still require a formal election or administrative activation step.'
+    copy: 'Federal regulations issued in 2025 remain proposed; the exact election to receive the $1,000 pilot deposit is not yet finalized.'
   },
   {
     pill: 'Unknown adoption',
-    title: 'Employer match availability',
-    copy: 'The calculator can model a match, but real participation rates are still uncertain.'
+    title: 'Employer participation',
+    copy: 'The $2,500-per-year employer contribution is permitted, but actual employer adoption rates are still uncertain.'
   },
   {
     pill: 'State variance',
     title: 'Tax conformity',
-    copy: 'Federal treatment may not map cleanly to every state tax regime.'
+    copy: 'Federal treatment may not map cleanly to every state. California-specific kiddie-tax behavior is available as an optional layer; other states are not modeled.'
   },
   {
     pill: 'Reserved rules',
     title: 'Aid and rollover treatment',
-    copy: 'Some age-18 transfer details and financial-aid effects still depend on future guidance.'
+    copy: 'Treatment under the new SAI (Student Aid Index) financial-aid formula and the precise age-18 rollover rules still depend on final guidance.'
   }
 ];
 ---
@@ -155,22 +155,24 @@ const watchpoints = [
           <span class="section-kicker">How It Works</span>
           <h1 class="section-title">One clear view of the account lifecycle, the model, and the result.</h1>
           <p class="section-copy">
-            This page is the quick-read version of the full system: how the account starts, what the calculator
-            actually simulates, and which rules still deserve caution before anyone treats the projection as final.
+            This page describes how the calculator models a Trump Account under current federal guidance and
+            proposed 2025 regulations. It is a planning illustration, not tax or legal advice — several inputs
+            (the $1,000 pilot deposit, the 18-year horizon, the return engine) are fixed modeling assumptions
+            rather than universal facts.
           </p>
 
           <div class="how-hero__meta">
             <div class="how-hero__meta-item">
-              <span>Federal seed</span>
+              <span>Modeled federal seed</span>
               <strong>$1,000</strong>
             </div>
             <div class="how-hero__meta-item">
-              <span>Compounding window</span>
+              <span>Modeled horizon</span>
               <strong>18 years</strong>
             </div>
             <div class="how-hero__meta-item">
               <span>Simulation depth</span>
-              <strong>1,000 paths</strong>
+              <strong>1,000 paths × 12/yr</strong>
             </div>
           </div>
         </div>
@@ -248,8 +250,10 @@ const watchpoints = [
             <span class="section-kicker">Model Logic</span>
             <h2 class="section-title">What the calculator actually changes.</h2>
             <p class="section-copy">
-              The simulator is not a black box. These inputs are the pieces that move the result when a user
-              adjusts the planner.
+              The simulator is not a black box. The drivers below are what a user can move; everything else
+              — the $1,000 pilot deposit, the 18-year window, monthly compounding using S&amp;P 500 statistics,
+              and the stochastic tuition growth — is held fixed across scenarios so two configurations stay
+              directly comparable.
             </p>
           </div>
 
@@ -311,6 +315,13 @@ const watchpoints = [
             </article>
           ))}
         </div>
+
+        <p class="section-copy" style="margin-top: 1.5rem;">
+          <strong>What this page does not model:</strong> non-California state taxes, employer match adoption
+          probabilities, custodian fees, contribution-cap inflation indexing beyond the current statutory
+          values, the precise SAI financial-aid calculation, and any future legislative or regulatory changes
+          to the proposed 2025 rules.
+        </p>
       </div>
     </section>
   </section>

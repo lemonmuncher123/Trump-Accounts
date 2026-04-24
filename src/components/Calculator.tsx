@@ -8,10 +8,23 @@ import {
   type SimulationPoint,
   type UniversityType
 } from '../lib/calculator';
+import { capContributions, californiaIncrementalTax, pathwiseCaKiddieTax, type FilingStatus } from '../lib/caTaxCalculator';
+import TaxSavings from './TaxSavings';
+
+const TRUMP_ACCOUNT_INITIAL_SEED = 1_000; // federal $1,000 seed deposit
+
+/** SimulationPoint extended with after-tax Trump Account balance. */
+interface AfterTaxPoint extends SimulationPoint {
+  afterTaxBalance: number;
+  afterTaxIsSuccess: boolean;
+}
+
 
 interface Props {
-  historicalMeanReturn: number;
-  historicalVolatility: number;
+  /** Mean of monthly returns (e.g. ≈0.0099 for ~12.5% annualized). */
+  monthlyMean: number;
+  /** Standard deviation of monthly returns (e.g. ≈0.0488 for ~16.9% annualized). */
+  monthlyVol: number;
   dataRangeConfig: string;
 }
 
@@ -21,6 +34,22 @@ interface WorkerResponse {
 }
 
 const MIN_CALCULATION_DISPLAY_MS = 1500;
+
+const FILING_OPTIONS: { value: FilingStatus; label: string }[] = [
+  { value: 'single', label: 'Single' },
+  { value: 'mfj',    label: 'Married' },
+  { value: 'hoh',    label: 'Head of HH' },
+];
+const FEDERAL_RATE_OPTIONS = [
+  { value: 0.22, label: '22%' },
+  { value: 0.24, label: '24%' },
+  { value: 0.32, label: '32%' },
+  { value: 0.37, label: '37%' },
+];
+const CHILD_RATE_OPTIONS = [
+  { value: 0.10, label: '10%' },
+  { value: 0.12, label: '12%' },
+];
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -36,16 +65,24 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export default function Calculator({ historicalMeanReturn, historicalVolatility, dataRangeConfig }: Props) {
+export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }: Props) {
   const [annualContribution, setAnnualContribution] = useState(5000);
   const [employerMatchAnnual, setEmployerMatchAnnual] = useState(0);
   const [universityType, setUniversityType] = useState<UniversityType>('public');
   const [showSuccess, setShowSuccess] = useState(true);
   const [showFailure, setShowFailure] = useState(true);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [childFutureRate, setChildFutureRate]       = useState(0.10);
+  const [filingStatus, setFilingStatus]             = useState<FilingStatus>('mfj');
+  const [baseCaIncome, setBaseCaIncome]             = useState(150_000);
+  const [parentFederalRate, setParentFederalRate]   = useState(0.24);
+  const [activeTab, setActiveTab]                   = useState<'simulation' | 'tax'>('simulation');
+  const [includeTax, setIncludeTax]                 = useState(true);
+  const [includeAnnualCaKiddieTax, setIncludeAnnualCaKiddieTax] = useState(true);
 
   const debouncedAnnual = useDebounce(annualContribution, 160);
   const debouncedMatch = useDebounce(employerMatchAnnual, 160);
+  const debouncedBaseCaIncome = useDebounce(baseCaIncome, 160);
 
   const [simulation, setSimulation] = useState<SimulationOutput>(() =>
     simulateCollegeSavings({
@@ -53,8 +90,8 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
       employerMatchAnnual: 0,
       universityType: 'public',
       yearsToMatriculation: 18,
-      historicalMeanReturn,
-      historicalVolatility
+      monthlyMean,
+      monthlyVol
     })
   );
 
@@ -165,13 +202,14 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
       return;
     }
 
+    const { employerC: cappedMatch, otherC: cappedAnnual } = capContributions(debouncedMatch, debouncedAnnual);
     const nextInput: CalculatorInput = {
-      annualContribution: debouncedAnnual,
-      employerMatchAnnual: debouncedMatch,
+      annualContribution: cappedAnnual,
+      employerMatchAnnual: cappedMatch,
       universityType,
       yearsToMatriculation: 18,
-      historicalMeanReturn,
-      historicalVolatility
+      monthlyMean,
+      monthlyVol
     };
 
     const nextRequestId = requestIdRef.current + 1;
@@ -198,38 +236,94 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
     return () => {
       cancelInFlightCalculation(false);
     };
-  }, [debouncedAnnual, debouncedMatch, universityType, historicalMeanReturn, historicalVolatility]);
+  }, [debouncedAnnual, debouncedMatch, universityType, monthlyMean, monthlyVol]);
 
   const deferredPoints = useDeferredValue(simulation.scatterPoints);
-  const isSettlingInput = annualContribution !== debouncedAnnual || employerMatchAnnual !== debouncedMatch;
+  const isSettlingInput = annualContribution !== debouncedAnnual || employerMatchAnnual !== debouncedMatch || baseCaIncome !== debouncedBaseCaIncome;
   const showCalculatorState = isCalculating || isSettlingInput;
 
-  const filteredPoints = useMemo(() => {
-    const successPoints: SimulationPoint[] = [];
-    const shortfallPoints: SimulationPoint[] = [];
+  // ── After-tax conversion ─────────────────────────────────────────────────
+  // Pre-tax algorithm in calculator.ts is kept fully intact.
+  // Post-hoc tax adjustment per scatter point using the shared tax profile:
+  //
+  //   basis = 18 × otherC  (only individual contributions create federal basis;
+  //                          employer §128 contributions have none)
+  //
+  //   When includeAnnualCaKiddieTax = true (conservative):
+  //     CA tax = pathwise sum of annual kiddie-tax computed from each path's
+  //     own year-by-year balance trajectory (via pathwiseCaKiddieTax).
+  //   When includeAnnualCaKiddieTax = false (optimistic / deferral):
+  //     CA tax = terminal CA tax at distribution on accumulated gains per path
+  //
+  // Shared tax profile (filingStatus, baseCaIncome, parentFederalRate, childFutureRate)
+  // is lifted to this component so both sections always use identical inputs.
+  const afterTaxPoints = useMemo<AfterTaxPoint[]>(() => {
+    const { employerC, otherC } = capContributions(debouncedMatch, debouncedAnnual);
+    const totalC   = employerC + otherC;
+    const basis    = 18 * otherC;  // federal basis
+    const caBasis  = 18 * totalC;  // CA basis (both employer + individual are CA-taxed)
 
-    deferredPoints.forEach((point) => {
-      if (point.isSuccess) {
-        if (showSuccess) {
-          successPoints.push(point);
-        }
+    return deferredPoints.map(pt => {
+      const federalDistTax = Math.max(0, pt.savingsBalance - basis) * childFutureRate;
+      const caTax = includeAnnualCaKiddieTax
+        ? pathwiseCaKiddieTax(pt.balanceByYear, TRUMP_ACCOUNT_INITIAL_SEED, totalC, filingStatus, baseCaIncome)
+        : californiaIncrementalTax(baseCaIncome + totalC, Math.max(0, pt.savingsBalance - caBasis), filingStatus);
+      const afterTaxBalance = Math.max(0, pt.savingsBalance - federalDistTax - caTax);
+      return { ...pt, afterTaxBalance, afterTaxIsSuccess: afterTaxBalance >= pt.tuitionCost };
+    });
+  }, [deferredPoints, debouncedAnnual, debouncedMatch, childFutureRate, filingStatus, baseCaIncome, includeAnnualCaKiddieTax]);
+
+  // Non-deferred stats for the results panel (updates when simulation settles)
+  const afterTaxStats = useMemo(() => {
+    const { employerC, otherC } = capContributions(debouncedMatch, debouncedAnnual);
+    const totalC   = employerC + otherC;
+    const basis    = 18 * otherC;
+    const caBasis  = 18 * totalC;
+    const balances: number[] = [];
+    let successCt = 0;
+    for (const pt of simulation.scatterPoints) {
+      const federalDistTax = Math.max(0, pt.savingsBalance - basis) * childFutureRate;
+      const caTax = includeAnnualCaKiddieTax
+        ? pathwiseCaKiddieTax(pt.balanceByYear, TRUMP_ACCOUNT_INITIAL_SEED, totalC, filingStatus, baseCaIncome)
+        : californiaIncrementalTax(baseCaIncome + totalC, Math.max(0, pt.savingsBalance - caBasis), filingStatus);
+      const afterTaxBalance = Math.max(0, pt.savingsBalance - federalDistTax - caTax);
+      balances.push(afterTaxBalance);
+      if (afterTaxBalance >= pt.tuitionCost) successCt++;
+    }
+    balances.sort((a, b) => a - b);
+    return {
+      median:       balances[Math.floor(balances.length * 0.5)] ?? 0,
+      successCount: successCt,
+      successRate:  (successCt / (simulation.scatterPoints.length || 1)) * 100,
+    };
+  }, [simulation.scatterPoints, debouncedAnnual, debouncedMatch, childFutureRate, filingStatus, baseCaIncome, includeAnnualCaKiddieTax]);
+  // ────────────────────────────────────────────────────────────────────────
+
+  const filteredPoints = useMemo(() => {
+    const successPoints: AfterTaxPoint[] = [];
+    const shortfallPoints: AfterTaxPoint[] = [];
+
+    afterTaxPoints.forEach((point) => {
+      const success = includeTax ? point.afterTaxIsSuccess : point.isSuccess;
+      if (success) {
+        if (showSuccess) successPoints.push(point);
         return;
       }
-
-      if (showFailure) {
-        shortfallPoints.push(point);
-      }
+      if (showFailure) shortfallPoints.push(point);
     });
 
     return { successPoints, shortfallPoints };
-  }, [deferredPoints, showSuccess, showFailure]);
+  }, [afterTaxPoints, showSuccess, showFailure, includeTax]);
 
-  const successCount = useMemo(
-    () => simulation.scatterPoints.reduce((count, point) => count + (point.isSuccess ? 1 : 0), 0),
-    [simulation.scatterPoints]
-  );
+  const successCount = includeTax ? afterTaxStats.successCount : simulation.scatterPoints.filter(p => p.isSuccess).length;
   const totalPaths = simulation.scatterPoints.length;
   const shortfallCount = totalPaths - successCount;
+
+  // Compute wasCapped for the cap warning
+  const { wasCapped: inputsExceedCap } = useMemo(
+    () => capContributions(debouncedMatch, debouncedAnnual),
+    [debouncedMatch, debouncedAnnual],
+  );
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', {
@@ -246,7 +340,29 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
       maximumFractionDigits: value >= 1000000 ? 1 : 0
     }).format(value);
 
+  const effectiveTab = includeTax ? activeTab : 'simulation';
+
   return (
+    <>
+    {/* ── Tax toggle ── above the whole card ───────────────────── */}
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+      gap: '10px', marginBottom: '12px',
+    }}>
+      <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted)' }}>
+        {includeTax ? 'Tax analysis on' : 'Pre-tax only'}
+      </span>
+      <div
+        className={`apple-toggle ${includeTax ? 'active' : ''}`}
+        onClick={() => {
+          setIncludeTax(v => !v);
+          if (activeTab === 'tax') setActiveTab('simulation');
+        }}
+      >
+        <div className="toggle-thumb" />
+      </div>
+    </div>
+
     <div className="app-layout">
       <aside className="sidebar">
         <h1 style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '-0.5px', marginBottom: '8px' }}>
@@ -303,7 +419,7 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Family Annual Input
+                Annual Savings Budget
               </span>
               <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>${annualContribution.toLocaleString()}</span>
             </div>
@@ -322,7 +438,7 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Employer Match
+                Employer Contribution
               </span>
               <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--accent-emerald)' }}>+ ${employerMatchAnnual.toLocaleString()}</span>
             </div>
@@ -339,6 +455,80 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
           </div>
         </div>
 
+        {inputsExceedCap && (
+          <div style={{
+            background:   'rgba(249, 115, 22, 0.08)',
+            border:       '1px solid rgba(249, 115, 22, 0.25)',
+            borderRadius: '12px',
+            padding:      '10px 14px',
+            fontSize:     '12px',
+            color:        'var(--accent-orange)',
+            lineHeight:   1.5,
+          }}>
+            Inputs exceed the $5,000/yr statutory cap ($2,500 employer limit). Simulation and tax figures use capped amounts.
+          </div>
+        )}
+
+        {/* ── Tax profile (only when tax mode is on) ───────────── */}
+        {includeTax && <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '0' }}>
+          <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: 0 }}>
+            Tax Profile · CA 2025
+          </p>
+
+          <div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 500 }}>Filing Status</div>
+            <div className="apple-segmented-control">
+              {FILING_OPTIONS.map(opt => (
+                <button key={opt.value} type="button"
+                  className={`apple-segmented-item ${filingStatus === opt.value ? 'active' : ''}`}
+                  onClick={() => setFilingStatus(opt.value)} aria-pressed={filingStatus === opt.value}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>CA Taxable Income</span>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(baseCaIncome)}
+              </span>
+            </div>
+            <input type="range" className="apple-slider" value={baseCaIncome}
+              onChange={e => setBaseCaIncome(Number(e.target.value))}
+              min={40_000} max={600_000} step={10_000} />
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>After deductions &amp; adjustments</div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 500 }}>Your Federal Marginal Rate</div>
+            <div className="apple-segmented-control">
+              {FEDERAL_RATE_OPTIONS.map(opt => (
+                <button key={opt.value} type="button"
+                  className={`apple-segmented-item ${parentFederalRate === opt.value ? 'active' : ''}`}
+                  onClick={() => setParentFederalRate(opt.value)} aria-pressed={parentFederalRate === opt.value}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 500 }}>Child's Future Federal Rate</div>
+            <div className="apple-segmented-control">
+              {CHILD_RATE_OPTIONS.map(opt => (
+                <button key={opt.value} type="button"
+                  className={`apple-segmented-item ${childFutureRate === opt.value ? 'active' : ''}`}
+                  onClick={() => setChildFutureRate(opt.value)} aria-pressed={childFutureRate === opt.value}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Applied at distribution (age 18)</div>
+          </div>
+        </div>}
+
         <div className="projection-box" style={{ background: 'transparent', padding: 0, marginTop: '16px', border: 'none' }}>
           <div className="glass-panel" style={{ background: 'rgba(79, 143, 247, 0.05)', borderColor: 'rgba(79, 143, 247, 0.2)', marginBottom: 0 }}>
             <div className="calculator-summary__header">
@@ -349,25 +539,41 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
                 {showCalculatorState ? 'Calculating' : 'Live'}
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Median End Balance:</span>
-              <strong style={{ color: 'var(--text-main)' }}>{formatCurrency(simulation.medianSavings)}</strong>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>
+                Median Balance{includeTax && <span style={{ fontSize: '11px', opacity: 0.6 }}> (gross)</span>}:
+              </span>
+              <strong style={{ color: includeTax ? 'var(--text-muted)' : 'var(--accent-emerald)' }}>
+                {formatCurrency(simulation.medianSavings)}
+              </strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', fontSize: '14px' }}>
+            {includeTax && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Median Balance <span style={{ fontSize: '11px', opacity: 0.6 }}>(after-tax)</span>:</span>
+                <strong style={{ color: 'var(--accent-emerald)' }}>{formatCurrency(afterTaxStats.median)}</strong>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
               <span style={{ color: 'var(--text-muted)' }}>Est. 4-Year Tuition:</span>
               <strong style={{ color: 'var(--text-main)' }}>{formatCurrency(simulation.expectedTuition)}</strong>
             </div>
-            <div style={{ height: '1px', background: 'var(--border-light)', margin: '16px 0' }} />
+            <div style={{ height: '1px', background: 'var(--border-light)', margin: '12px 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: 'var(--text-main)', fontWeight: 500 }}>Success Rate:</span>
+              <div>
+                <span style={{ color: 'var(--text-main)', fontWeight: 500 }}>Success Rate</span>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  {includeTax ? 'based on after-tax balance' : 'based on gross balance'}
+                </div>
+              </div>
               <strong
                 style={{
                   fontSize: '24px',
                   letterSpacing: '-0.02em',
-                  color: simulation.successRate > 50 ? 'var(--accent-emerald)' : 'var(--accent-orange)'
+                  color: (includeTax ? afterTaxStats.successRate : simulation.successRate) > 50
+                    ? 'var(--accent-emerald)' : 'var(--accent-orange)'
                 }}
               >
-                {simulation.successRate.toFixed(1)}%
+                {(includeTax ? afterTaxStats.successRate : simulation.successRate).toFixed(1)}%
               </strong>
             </div>
           </div>
@@ -375,6 +581,29 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
       </aside>
 
       <main className="main-chart-area">
+        {/* ── Tab bar ──────────────────────────────────────────────── */}
+        {includeTax && (
+          <div className="apple-segmented-control" style={{ marginBottom: '24px', width: 'fit-content' }}>
+            <button
+              type="button"
+              className={`apple-segmented-item ${effectiveTab === 'simulation' ? 'active' : ''}`}
+              onClick={() => setActiveTab('simulation')}
+              aria-pressed={effectiveTab === 'simulation'}
+            >
+              Simulation
+            </button>
+            <button
+              type="button"
+              className={`apple-segmented-item ${effectiveTab === 'tax' ? 'active' : ''}`}
+              onClick={() => setActiveTab('tax')}
+              aria-pressed={effectiveTab === 'tax'}
+            >
+              Tax Analysis
+            </button>
+          </div>
+        )}
+
+        {effectiveTab === 'simulation' && (<>
         <div className="calculator-chart__header">
           <div>
             <span className="calculator-chart__eyebrow">Scenario field</span>
@@ -407,9 +636,15 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
           <div className="calculator-chart-shell__glow calculator-chart-shell__glow--bottom" />
 
           <div className="calculator-chart-meta">
+            {includeTax && (
+              <div className="calculator-chart-meta__item">
+                <span>After-tax median</span>
+                <strong>{formatCompactCurrency(afterTaxStats.median)}</strong>
+              </div>
+            )}
             <div className="calculator-chart-meta__item">
-              <span>Median savings</span>
-              <strong>{formatCompactCurrency(simulation.medianSavings)}</strong>
+              <span>{includeTax ? 'Pre-tax median' : 'Median savings'}</span>
+              <strong style={includeTax ? { opacity: 0.6 } : undefined}>{formatCompactCurrency(simulation.medianSavings)}</strong>
             </div>
             <div className="calculator-chart-meta__item">
               <span>Median tuition</span>
@@ -433,12 +668,33 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart margin={{ top: 54, right: 24, bottom: 56, left: 10 }}>
                   <CartesianGrid vertical={false} strokeDasharray="4 12" stroke="var(--chart-grid)" />
-                  <ReferenceLine
-                    x={simulation.medianSavings}
-                    stroke="var(--chart-guide-blue)"
-                    strokeDasharray="5 7"
-                    ifOverflow="extendDomain"
-                  />
+                  {includeTax && (
+                    <>
+                    {/* Pre-tax reference line — dimmed, for comparison only */}
+                    <ReferenceLine
+                      x={simulation.medianSavings}
+                      stroke="var(--chart-guide-blue)"
+                      strokeDasharray="3 10"
+                      strokeOpacity={0.35}
+                      ifOverflow="extendDomain"
+                    />
+                    {/* After-tax reference line — primary */}
+                    <ReferenceLine
+                      x={afterTaxStats.median}
+                      stroke="var(--chart-guide-blue)"
+                      strokeDasharray="5 7"
+                      ifOverflow="extendDomain"
+                    />
+                    </>
+                  )}
+                  {!includeTax && (
+                    <ReferenceLine
+                      x={simulation.medianSavings}
+                      stroke="var(--chart-guide-blue)"
+                      strokeDasharray="5 7"
+                      ifOverflow="extendDomain"
+                    />
+                  )}
                   <ReferenceLine
                     y={simulation.expectedTuition}
                     stroke="var(--chart-guide-orange)"
@@ -446,9 +702,9 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
                     ifOverflow="extendDomain"
                   />
                   <XAxis
-                    dataKey="savingsBalance"
+                    dataKey={includeTax ? "afterTaxBalance" : "savingsBalance"}
                     type="number"
-                    name="Projected Savings"
+                    name={includeTax ? "After-Tax Savings" : "Gross Savings"}
                     tickFormatter={formatCompactCurrency}
                     stroke="var(--text-soft)"
                     axisLine={false}
@@ -472,18 +728,32 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
                   <Tooltip
                     cursor={false}
                     content={({ active, payload }) => {
-                      const point = payload?.[0]?.payload as SimulationPoint | undefined;
+                      const point = payload?.[0]?.payload as AfterTaxPoint | undefined;
 
                       if (active && point) {
+                        const isFunded = includeTax ? point.afterTaxIsSuccess : point.isSuccess;
                         return (
                           <div className="calculator-tooltip">
-                            <span className={`calculator-tooltip__eyebrow ${point.isSuccess ? 'is-success' : 'is-shortfall'}`}>
-                              {point.isSuccess ? 'Funded path' : 'Shortfall path'}
+                            <span className={`calculator-tooltip__eyebrow ${isFunded ? 'is-success' : 'is-shortfall'}`}>
+                              {isFunded ? 'Funded path' : 'Shortfall path'}
                             </span>
-                            <div className="calculator-tooltip__row">
-                              <span>Projected fund</span>
-                              <strong>{formatCurrency(point.savingsBalance)}</strong>
-                            </div>
+                            {includeTax ? (
+                              <>
+                                <div className="calculator-tooltip__row">
+                                  <span>After-tax savings</span>
+                                  <strong>{formatCurrency(point.afterTaxBalance)}</strong>
+                                </div>
+                                <div className="calculator-tooltip__row" style={{ opacity: 0.65 }}>
+                                  <span>Pre-tax (gross)</span>
+                                  <strong>{formatCurrency(point.savingsBalance)}</strong>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="calculator-tooltip__row">
+                                <span>Gross savings</span>
+                                <strong>{formatCurrency(point.savingsBalance)}</strong>
+                              </div>
+                            )}
                             <div className="calculator-tooltip__row">
                               <span>Projected tuition</span>
                               <strong>{formatCurrency(point.tuitionCost)}</strong>
@@ -540,7 +810,25 @@ export default function Calculator({ historicalMeanReturn, historicalVolatility,
             ) : null}
           </AnimatePresence>
         </div>
+        </>)}
+
+        {effectiveTab === 'tax' && (
+          <TaxSavings
+            annualContribution={debouncedAnnual}
+            employerMatchAnnual={debouncedMatch}
+            monthlyMean={monthlyMean}
+            mcMedianSavings={simulation.medianSavings}
+            expectedTuition={simulation.expectedTuition}
+            filingStatus={filingStatus}
+            baseCaIncome={baseCaIncome}
+            parentFederalRate={parentFederalRate}
+            childFutureRate={childFutureRate}
+            includeAnnualCaKiddieTax={includeAnnualCaKiddieTax}
+            onToggleCaKiddieTax={() => setIncludeAnnualCaKiddieTax(v => !v)}
+          />
+        )}
       </main>
     </div>
+    </>
   );
 }

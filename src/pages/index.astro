@@ -6,9 +6,12 @@ import Calculator from '../components/Calculator';
 import YahooFinance from 'yahoo-finance2';
 const yahooFinance = new YahooFinance();
 
-// Fallbacks matching historical S&P 500 behavior
-let historicalMeanReturn = 0.125;
-let historicalVolatility = 0.169;
+// Fallbacks matching historical S&P 500 behavior, expressed at the monthly horizon
+// because the simulator now compounds 12 monthly draws per year (not one annual draw).
+// Defaults are derived so the implied annual values match prior behavior:
+//   (1 + 0.0099)^12 - 1 ≈ 12.5%   monthly std × √12 ≈ 16.9%
+let monthlyMean = 0.0099;
+let monthlyVol  = 0.0488;
 let dataRangeConfig = "1950-2024 (Fallback)";
 
 try {
@@ -18,25 +21,28 @@ try {
   const queryOptions = { period1: new Date('1950-01-01'), period2: new Date(), interval: '1mo' as const };
   const chartResult = await yahooFinance.chart(query, queryOptions);
   const result = chartResult.quotes;
-  
+
   if (result && result.length > 24) {
     const firstYear = new Date(result[0].date).getFullYear();
     const lastYear = new Date(result[result.length - 1].date).getFullYear();
-    
+
     const monthlyReturns = [];
     for(let i = 1; i < result.length; i++) {
         monthlyReturns.push( (result[i].close - result[i-1].close) / result[i-1].close );
     }
-    
+
     const meanMonthly = monthlyReturns.reduce((a,b)=>a+b, 0) / monthlyReturns.length;
     let varSum = 0;
     for(const r of monthlyReturns) varSum += Math.pow(r - meanMonthly, 2);
     const varMonthly = varSum / monthlyReturns.length;
-    
-    historicalMeanReturn = meanMonthly * 12; // Annualized arithmetic mean
-    historicalVolatility = Math.sqrt(varMonthly) * Math.sqrt(12); // Annualized standard deviation
+
+    monthlyMean = meanMonthly;
+    monthlyVol  = Math.sqrt(varMonthly);
     dataRangeConfig = `${firstYear}—${lastYear}`;
-    console.log(`[Astro Build] Fetched real market data: Mean = ${(historicalMeanReturn*100).toFixed(2)}%, Volatility = ${(historicalVolatility*100).toFixed(2)}%`);
+
+    const annualizedDisplay = Math.pow(1 + monthlyMean, 12) - 1;
+    const annualizedVolDisplay = monthlyVol * Math.sqrt(12);
+    console.log(`[Astro Build] Fetched real market data: Annualized Mean = ${(annualizedDisplay*100).toFixed(2)}%, Annualized Vol = ${(annualizedVolDisplay*100).toFixed(2)}%`);
   }
 } catch (e) {
    console.error("[Astro Build] Using fallback parameters for SP500 due to Yahoo Finance error", e);
@@ -63,8 +69,8 @@ const description = "Explore an Apple-inspired college savings planner using Mon
 
         <Calculator
           client:only="react"
-          historicalMeanReturn={historicalMeanReturn}
-          historicalVolatility={historicalVolatility}
+          monthlyMean={monthlyMean}
+          monthlyVol={monthlyVol}
           dataRangeConfig={dataRangeConfig}
         />
       </div>

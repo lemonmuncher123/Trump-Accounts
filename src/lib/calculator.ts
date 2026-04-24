@@ -5,8 +5,10 @@ export interface CalculatorInput {
   employerMatchAnnual: number;
   universityType: UniversityType;
   yearsToMatriculation?: number; // default 18
-  historicalMeanReturn: number; 
-  historicalVolatility: number; 
+  /** Mean of monthly returns (e.g. ≈0.0099 for ~12.5% annualized). */
+  monthlyMean: number;
+  /** Standard deviation of monthly returns (e.g. ≈0.0488 for ~16.9% annualized). */
+  monthlyVol: number;
 }
 
 export interface SimulationPoint {
@@ -14,6 +16,9 @@ export interface SimulationPoint {
   savingsBalance: number; // For X axis
   tuitionCost: number;    // For Y axis
   isSuccess: boolean;
+  /** End-of-year (post-contribution, pre-tax) Trump Account balance for years 1..years.
+   *  Length = yearsToMatriculation. Used by pathwise CA kiddie-tax computation. */
+  balanceByYear: Float64Array;
 }
 
 export interface SimulationOutput {
@@ -42,7 +47,7 @@ export function simulateCollegeSavings(input: CalculatorInput): SimulationOutput
   const points: SimulationPoint[] = [];
   let successCount = 0;
   
-  const totalMonthlyInput = (input.annualContribution + input.employerMatchAnnual) / 12;
+  const totalAnnualInput = input.annualContribution + input.employerMatchAnnual;
 
   const savingsResults = new Float64Array(numSimulations);
   const tuitionResults = new Float64Array(numSimulations);
@@ -50,32 +55,39 @@ export function simulateCollegeSavings(input: CalculatorInput): SimulationOutput
   for (let i = 0; i < numSimulations; i++) {
     let balance = initialSeed;
     let cost = startTuition;
-    
+    const balanceByYear = new Float64Array(years);
+
     for (let y = 0; y < years; y++) {
-      // Annual return via Geometric Brownian Motion approx
-      const annualReturn = randomNormal(input.historicalMeanReturn, input.historicalVolatility);
-      const monthlyRate = annualReturn / 12;
-      
-      for(let m = 0; m < 12; m++) {
-        balance = balance * (1 + monthlyRate) + totalMonthlyInput;
+      // 12 monthly normal draws, compounded multiplicatively. Matches the
+      // monthly-return statistics (mean, std) we extract from market data,
+      // so the annual-horizon distribution is the true compounded distribution
+      // — not a single normal sample at the annual horizon (which would have
+      // the same first two moments but lose right-skew from compounding).
+      let yearGrowth = 1;
+      for (let m = 0; m < 12; m++) {
+        yearGrowth *= 1 + randomNormal(input.monthlyMean, input.monthlyVol);
       }
-      
-      // Tuition also inflates stochastically (like real Python model)
+      // Contribution still annual (deposit timing assumption: end of year).
+      balance = balance * yearGrowth + totalAnnualInput;
+      balanceByYear[y] = balance;
+
+      // Tuition also inflates stochastically (annual draw).
       const tuitionInc = Math.max(randomNormal(TUITION_INFLATION, TUITION_VOLATILITY), -0.05);
       cost *= (1 + tuitionInc);
     }
-    
+
     savingsResults[i] = balance;
     tuitionResults[i] = cost;
-    
+
     const isSuccess = balance >= cost;
     if (isSuccess) successCount++;
-    
+
     points.push({
       id: i,
       savingsBalance: balance,
       tuitionCost: cost,
       isSuccess,
+      balanceByYear,
     });
   }
   

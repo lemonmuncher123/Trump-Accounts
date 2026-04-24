@@ -5,7 +5,7 @@ import react from '@astrojs/react';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://QuellaMC.github.io',
-  base: '/Account-Independent-Research-Project',
+  site: 'https://lemonmuncher123.github.io',
+  base: '/Trump-Accounts',
   integrations: [react()]
 });

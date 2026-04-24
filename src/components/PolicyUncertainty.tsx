@@ -7,13 +7,13 @@ const risks = [
     icon: <MapPin size={24} className="text-orange" />,
     title: "State Tax Conformity",
     pill: "Pending Decision",
-    desc: "Federal growth is tax-free, but states like California have announced they may not conform to Section 530A, meaning state-level capital gains taxes could apply."
+    desc: "Federal growth is tax-deferred (not permanently tax-free). Additionally, states like California have announced they may not conform to Section 530A, meaning state-level capital gains taxes could apply during the accumulation period or at distribution."
   },
   {
     icon: <HeartHandshake size={24} className="text-blue" />,
     title: "Employer Match Rates",
     pill: "Unknown Variable",
-    desc: "The law permits a $2,500 tax-free match, but actual corporate participation adoption curves are completely unknown at this stage."
+    desc: "The law permits a $2,500/yr employer match excluded from federal income via §128, but actual corporate participation and adoption curves are completely unknown at this stage."
   },
   {
     icon: <Landmark size={24} className="text-emerald" />,

@@ -14,7 +14,8 @@ vi.mock('../lib/calculator', () => ({
           id: 1,
           savingsBalance: medianSavings,
           tuitionCost: expectedTuition,
-          isSuccess: medianSavings >= expectedTuition
+          isSuccess: medianSavings >= expectedTuition,
+          balanceByYear: new Float64Array(18),
         }
       ],
       expectedTuition,
@@ -30,15 +31,20 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function readMedianEndBalance() {
-  return screen.getByText(/Median End Balance/i).nextElementSibling?.textContent ?? '';
+function readMedianBalance() {
+  // Find the "Median Balance" row (with optional "(gross)" suffix) in the summary panel.
+  // Multiple "Median Balance" elements may exist (gross + after-tax); pick the first.
+  const allMatches = screen.getAllByText((_content, element) => {
+    return element?.tagName === 'SPAN' && /Median Balance/i.test(element.textContent ?? '');
+  });
+  const container = allMatches[0]?.closest('div');
+  return container?.querySelector('strong')?.textContent ?? '';
 }
 
 describe('Calculator React Component', () => {
   it('renders the core elements correctly', () => {
-    // Provide mocked realistic params
-    render(<Calculator historicalMeanReturn={0.125} historicalVolatility={0.169} dataRangeConfig="1950-2024" />);
-    
+    render(<Calculator monthlyMean={0.0099} monthlyVol={0.0488} dataRangeConfig="1950-2024" />);
+
     expect(screen.getByText(/Future College Savings/i)).toBeInTheDocument();
     expect(screen.getByTestId('annual-input')).toBeInTheDocument();
     expect(screen.getByTestId('match-input')).toBeInTheDocument();
@@ -47,10 +53,10 @@ describe('Calculator React Component', () => {
 
   it('updates calculations when inputs change', () => {
     vi.useFakeTimers();
-    render(<Calculator historicalMeanReturn={0.125} historicalVolatility={0.169} dataRangeConfig="1950-2024" />);
-    
+    render(<Calculator monthlyMean={0.0099} monthlyVol={0.0488} dataRangeConfig="1950-2024" />);
+
     const input = screen.getByTestId('annual-input');
-    
+
     fireEvent.change(input, { target: { value: '10000' } });
 
     act(() => {
@@ -61,12 +67,14 @@ describe('Calculator React Component', () => {
       vi.advanceTimersByTime(1600);
     });
 
-    expect(readMedianEndBalance()).toBe('$1,000,000');
+    // With capped inputs: annualContribution=10000 → cappedAnnual=min(10000, 5000-0)=5000
+    // Mock: medianSavings = 5000*100 + 0*50 = 500000
+    expect(readMedianBalance()).toBe('$500,000');
   });
 
   it('keeps only the latest input when values change rapidly', () => {
     vi.useFakeTimers();
-    render(<Calculator historicalMeanReturn={0.125} historicalVolatility={0.169} dataRangeConfig="1950-2024" />);
+    render(<Calculator monthlyMean={0.0099} monthlyVol={0.0488} dataRangeConfig="1950-2024" />);
 
     const input = screen.getByTestId('annual-input');
 
@@ -82,7 +90,8 @@ describe('Calculator React Component', () => {
       vi.advanceTimersByTime(1400);
     });
 
-    expect(readMedianEndBalance()).toBe('$500,000');
+    // First debounced value: 8000 → capped to 5000 → 500000
+    expect(readMedianBalance()).toBe('$500,000');
 
     act(() => {
       vi.advanceTimersByTime(200);
@@ -92,6 +101,7 @@ describe('Calculator React Component', () => {
       vi.advanceTimersByTime(1600);
     });
 
-    expect(readMedianEndBalance()).toBe('$1,500,000');
+    // Second debounced value: 15000 → capped to 5000 → 500000 (same due to cap)
+    expect(readMedianBalance()).toBe('$500,000');
   });
 });

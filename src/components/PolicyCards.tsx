@@ -11,15 +11,15 @@ const cards = [
   },
   {
     icon: <ShieldCheck size={36} strokeWidth={1.5} className="text-purple" />,
-    title: "Tax-Free Growth",
+    title: "Tax-Deferred Growth",
     tag: "Confirmed",
-    desc: "18 years of compounding without the 15% annual capital gains drag. The true hidden engine of the account."
+    desc: "18 years of compounding without the 15% annual federal capital gains drag. Growth is tax-deferred, not permanently tax-free — earnings are taxed at distribution."
   },
   {
     icon: <Handshake size={36} strokeWidth={1.5} className="text-emerald" />,
     title: "Employer Match",
     tag: "Pending Details",
-    desc: "Up to $2,500/yr matched tax-free by participating employers, turbocharging middle-class savings."
+    desc: "Up to $2,500/yr matched by participating employers with the employer portion excluded from federal income via §128, turbocharging middle-class savings."
   }
 ];
 
