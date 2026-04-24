@@ -3,7 +3,18 @@ import { motion } from 'framer-motion';
 
 const previewBars = [38, 46, 52, 44, 58, 64, 57, 73, 68, 84, 79, 92];
 
-export default function Hero({ dataRangeConfig }: { dataRangeConfig: string }) {
+interface HeroProps {
+  dataRangeConfig: string;
+  previewMedianBalance: number;
+}
+
+export default function Hero({ dataRangeConfig, previewMedianBalance }: HeroProps) {
+  const formattedBalance = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: previewMedianBalance >= 1_000_000 ? 1 : 0,
+  }).format(previewMedianBalance);
   return (
     <section className="hero-section container">
       <motion.div
@@ -13,15 +24,15 @@ export default function Hero({ dataRangeConfig }: { dataRangeConfig: string }) {
         transition={{ duration: 0.8, ease: 'easeOut' }}
       >
         <div className="hero-copy">
-          <div className="badge">Section 530A / OBBBA 2025</div>
+          <div className="badge">Stable Investing / 18-Year Horizon</div>
           <h1 className="hero-title">
-            Model the account
+            Your child's future
             <br />
-            <span className="text-gradient">before you debate it.</span>
+            <span className="text-gradient">starts with one decision.</span>
           </h1>
           <p className="hero-subtitle">
-            Adjust annual savings, employer match, and school target to reprice 1,000 projected 18-year
-            outcomes without leaving this route.
+            Model a Trump Account, then scroll down to see why decades of research say the same thing:
+            low-cost index funds and consistent contributions beat everything else over 18 years.
           </p>
           <div className="hero-inline-meta">
             <span>1,000 market paths</span>
@@ -56,33 +67,29 @@ export default function Hero({ dataRangeConfig }: { dataRangeConfig: string }) {
                 <strong>$5,000</strong>
               </div>
               <div className="hero-preview__track">
-                <span style={{ width: '42%' }} />
+                <span style={{ width: '25%' }} />
               </div>
             </div>
 
             <div className="hero-preview__control">
               <div className="hero-preview__label-row">
                 <span>Employer match</span>
-                <strong>$2,500</strong>
+                <strong>$0</strong>
               </div>
               <div className="hero-preview__track">
-                <span style={{ width: '28%' }} />
+                <span style={{ width: '0%' }} />
               </div>
             </div>
           </div>
 
-          <div className="hero-preview__metrics">
+          <div className="hero-preview__metrics" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
             <div>
               <span>Median balance</span>
-              <strong>$184k</strong>
+              <strong>{formattedBalance}</strong>
             </div>
             <div>
-              <span>Target tuition</span>
-              <strong>$115k</strong>
-            </div>
-            <div>
-              <span>Success rate</span>
-              <strong>82.4%</strong>
+              <span>Simulated paths</span>
+              <strong>1,000</strong>
             </div>
           </div>
 

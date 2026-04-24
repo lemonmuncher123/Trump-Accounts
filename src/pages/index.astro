@@ -2,6 +2,8 @@
 import AppLayout from '../layouts/AppLayout.astro';
 import Hero from '../components/Hero';
 import Calculator from '../components/Calculator';
+import BeyondTrumpAccounts from '../components/BeyondTrumpAccounts';
+import { simulateCollegeSavings } from '../lib/calculator';
 
 import YahooFinance from 'yahoo-finance2';
 const yahooFinance = new YahooFinance();
@@ -48,22 +50,33 @@ try {
    console.error("[Astro Build] Using fallback parameters for SP500 due to Yahoo Finance error", e);
 }
 
-const title = "College Savings Calculator | Section 530A Planner";
-const description = "Explore an Apple-inspired college savings planner using Monte Carlo projections grounded in historical Yahoo Finance market data.";
+const previewSim = simulateCollegeSavings({
+  annualContribution: 5000,
+  employerMatchAnnual: 0,
+  universityType: 'public',
+  yearsToMatriculation: 18,
+  monthlyMean,
+  monthlyVol
+});
+const previewMedianBalance = previewSim.medianSavings;
+
+const title = "College Savings Planner | Build Wealth Through Stable Investing";
+const description = "Model Trump Account projections, then discover why low-cost index funds and treasury bonds are the evidence-backed foundation for any education savings strategy.";
 ---
 
 <AppLayout activeTab="calculator" title={title} description={description}>
   <section class="route-page route-page--calculator">
-    <Hero client:load dataRangeConfig={dataRangeConfig} />
+    <Hero client:load dataRangeConfig={dataRangeConfig} previewMedianBalance={previewMedianBalance} />
 
     <section class="container section-spacing" style="padding-top: 0;">
       <div class="section-frame section-frame--calculator">
         <div class="section-intro">
-          <span class="section-kicker">Calculator</span>
-          <h2 class="section-title">The planner opens directly in the simulator.</h2>
+          <span class="section-kicker">Trump Account Calculator</span>
+          <h2 class="section-title">Run the numbers on the proposed Section 530A account.</h2>
           <p class="section-copy">
-            Each tab is now its own route, so users can switch between the calculator, FAQ, mechanics, and
-            project background without staying inside one uninterrupted scroll.
+            Adjust savings, employer match, and college target to see 1,000 simulated market-driven outcomes.
+            Then scroll past the calculator to explore why stable, low-cost investing is the real engine
+            behind any education savings strategy.
           </p>
         </div>
 
@@ -75,5 +88,7 @@ const description = "Explore an Apple-inspired college savings planner using Mon
         />
       </div>
     </section>
+
+    <BeyondTrumpAccounts client:visible />
   </section>
 </AppLayout>

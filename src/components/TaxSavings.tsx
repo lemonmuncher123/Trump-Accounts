@@ -34,6 +34,7 @@ interface Props {
    */
   includeAnnualCaKiddieTax: boolean;
   onToggleCaKiddieTax: () => void;
+  includeTuition: boolean;
 }
 
 
@@ -62,6 +63,7 @@ export default function TaxSavings({
   childFutureRate,
   includeAnnualCaKiddieTax,
   onToggleCaKiddieTax,
+  includeTuition,
 }: Props) {
 
   const { employerC, otherC, wasCapped } = useMemo(
@@ -285,7 +287,7 @@ export default function TaxSavings({
         </div>
 
       {/* ── Tuition gross-up panel ───────────────────────────────── */}
-      <div
+      {includeTuition && <div
         className="glass-panel"
         style={{ marginTop: '20px', marginBottom: 0 }}
       >
@@ -363,7 +365,7 @@ export default function TaxSavings({
         <div style={{ marginTop: '14px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
           Gross-up formula: tuition ÷ (1 − combined marginal rate). This illustrates how much additional salary you would need to earn to net the tuition amount after ordinary income taxes. If paying from a taxable brokerage (LTCG rates), the premium would be smaller. Trump Account qualified education withdrawals avoid the 10% penalty; the taxable portion (earnings above basis) is still subject to ordinary income tax at the child's future rate.
         </div>
-      </div>
+      </div>}
     </section>
   );
 }

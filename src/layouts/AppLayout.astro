@@ -36,9 +36,25 @@ const { activeTab, title, description } = Astro.props;
       </main>
 
       <footer class="page-footer">
-        <p>
-          Data sourced from ^GSPC Yahoo Finance. Policy metrics mapped against Federal Register Proposed
-          Regulations for Section 530A.
+        <div class="footer-disclaimer">
+          <p class="footer-disclaimer__title">Important Disclaimer</p>
+          <p>
+            This website is for informational and educational purposes only and does not constitute
+            investment advice, financial advice, tax advice, or any other kind of professional advice.
+            The creators of this site are not licensed financial advisors, tax professionals, or
+            registered investment advisors. All projections, simulations, and calculations are
+            hypothetical illustrations based on historical data and assumptions that may not reflect
+            future performance. <strong>Past performance is not indicative of future results.</strong>
+          </p>
+          <p>
+            You should consult a qualified financial advisor, tax professional, or other appropriate
+            expert before making any investment or financial decisions. Any reliance you place on the
+            information provided by this site is strictly at your own risk.
+          </p>
+        </div>
+        <p class="footer-source">
+          Market data sourced from ^GSPC Yahoo Finance. Policy metrics mapped against Federal Register
+          Proposed Regulations for Section 530A.
         </p>
       </footer>
     </div>

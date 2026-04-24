@@ -17,6 +17,7 @@ const TRUMP_ACCOUNT_INITIAL_SEED = 1_000; // federal $1,000 seed deposit
 interface AfterTaxPoint extends SimulationPoint {
   afterTaxBalance: number;
   afterTaxIsSuccess: boolean;
+  pathIndex: number;
 }
 
 
@@ -79,6 +80,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
   const [activeTab, setActiveTab]                   = useState<'simulation' | 'tax'>('simulation');
   const [includeTax, setIncludeTax]                 = useState(true);
   const [includeAnnualCaKiddieTax, setIncludeAnnualCaKiddieTax] = useState(true);
+  const [includeTuition, setIncludeTuition] = useState(false);
 
   const debouncedAnnual = useDebounce(annualContribution, 160);
   const debouncedMatch = useDebounce(employerMatchAnnual, 160);
@@ -263,13 +265,13 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
     const basis    = 18 * otherC;  // federal basis
     const caBasis  = 18 * totalC;  // CA basis (both employer + individual are CA-taxed)
 
-    return deferredPoints.map(pt => {
+    return deferredPoints.map((pt, i) => {
       const federalDistTax = Math.max(0, pt.savingsBalance - basis) * childFutureRate;
       const caTax = includeAnnualCaKiddieTax
         ? pathwiseCaKiddieTax(pt.balanceByYear, TRUMP_ACCOUNT_INITIAL_SEED, totalC, filingStatus, baseCaIncome)
         : californiaIncrementalTax(baseCaIncome + totalC, Math.max(0, pt.savingsBalance - caBasis), filingStatus);
       const afterTaxBalance = Math.max(0, pt.savingsBalance - federalDistTax - caTax);
-      return { ...pt, afterTaxBalance, afterTaxIsSuccess: afterTaxBalance >= pt.tuitionCost };
+      return { ...pt, afterTaxBalance, afterTaxIsSuccess: afterTaxBalance >= pt.tuitionCost, pathIndex: i };
     });
   }, [deferredPoints, debouncedAnnual, debouncedMatch, childFutureRate, filingStatus, baseCaIncome, includeAnnualCaKiddieTax]);
 
@@ -300,6 +302,9 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
   // ────────────────────────────────────────────────────────────────────────
 
   const filteredPoints = useMemo(() => {
+    if (!includeTuition) {
+      return { successPoints: afterTaxPoints, shortfallPoints: [] as AfterTaxPoint[] };
+    }
     const successPoints: AfterTaxPoint[] = [];
     const shortfallPoints: AfterTaxPoint[] = [];
 
@@ -313,7 +318,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
     });
 
     return { successPoints, shortfallPoints };
-  }, [afterTaxPoints, showSuccess, showFailure, includeTax]);
+  }, [afterTaxPoints, showSuccess, showFailure, includeTax, includeTuition]);
 
   const successCount = includeTax ? afterTaxStats.successCount : simulation.scatterPoints.filter(p => p.isSuccess).length;
   const totalPaths = simulation.scatterPoints.length;
@@ -344,22 +349,35 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
 
   return (
     <>
-    {/* ── Tax toggle ── above the whole card ───────────────────── */}
+    {/* ── Mode toggles ── above the whole card ──────────────────── */}
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-      gap: '10px', marginBottom: '12px',
+      gap: '20px', marginBottom: '12px',
     }}>
-      <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted)' }}>
-        {includeTax ? 'Tax analysis on' : 'Pre-tax only'}
-      </span>
-      <div
-        className={`apple-toggle ${includeTax ? 'active' : ''}`}
-        onClick={() => {
-          setIncludeTax(v => !v);
-          if (activeTab === 'tax') setActiveTab('simulation');
-        }}
-      >
-        <div className="toggle-thumb" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted)' }}>
+          {includeTuition ? 'Tuition simulation on' : 'Balance only'}
+        </span>
+        <div
+          className={`apple-toggle ${includeTuition ? 'active' : ''}`}
+          onClick={() => setIncludeTuition(v => !v)}
+        >
+          <div className="toggle-thumb" />
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted)' }}>
+          {includeTax ? 'Tax analysis on' : 'Pre-tax only'}
+        </span>
+        <div
+          className={`apple-toggle ${includeTax ? 'active' : ''}`}
+          onClick={() => {
+            setIncludeTax(v => !v);
+            if (activeTab === 'tax') setActiveTab('simulation');
+          }}
+        >
+          <div className="toggle-thumb" />
+        </div>
       </div>
     </div>
 
@@ -373,6 +391,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
           volatility ({dataRangeConfig}).
         </p>
 
+        {includeTuition && (
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-main)' }}>Show Successful</span>
@@ -388,8 +407,10 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
             </div>
           </div>
         </div>
+        )}
 
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          {includeTuition && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -415,6 +436,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
               </button>
             </div>
           </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -553,6 +575,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
                 <strong style={{ color: 'var(--accent-emerald)' }}>{formatCurrency(afterTaxStats.median)}</strong>
               </div>
             )}
+            {includeTuition && (<>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
               <span style={{ color: 'var(--text-muted)' }}>Est. 4-Year Tuition:</span>
               <strong style={{ color: 'var(--text-main)' }}>{formatCurrency(simulation.expectedTuition)}</strong>
@@ -576,6 +599,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
                 {(includeTax ? afterTaxStats.successRate : simulation.successRate).toFixed(1)}%
               </strong>
             </div>
+            </>)}
           </div>
         </div>
       </aside>
@@ -606,16 +630,19 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
         {effectiveTab === 'simulation' && (<>
         <div className="calculator-chart__header">
           <div>
-            <span className="calculator-chart__eyebrow">Scenario field</span>
-            <h2 className="calculator-chart__title">Where 1,000 college outcomes land</h2>
+            <span className="calculator-chart__eyebrow">{includeTuition ? 'Scenario field' : 'Balance distribution'}</span>
+            <h2 className="calculator-chart__title">{includeTuition ? 'Where 1,000 college outcomes land' : 'Where 1,000 savings paths land'}</h2>
             <p className="calculator-chart__copy">
-              Each point is one simulated 18-year path. Median savings and median tuition are marked so the cloud is easier to read.
+              {includeTuition
+                ? 'Each point is one simulated 18-year path. Median savings and median tuition are marked so the cloud is easier to read.'
+                : 'Each point is one simulated 18-year path. The vertical spread separates the dots so the balance distribution is easier to read.'}
             </p>
           </div>
           <div className="calculator-chart__header-side">
             <span className={`calculator-status-pill ${showCalculatorState ? 'is-busy' : ''}`}>
               {showCalculatorState ? 'Refreshing projections' : 'Updated'}
             </span>
+            {includeTuition && (
             <div className="calculator-chart__legend">
               <span className={`calculator-chart__legend-item ${showSuccess ? '' : 'is-muted'}`}>
                 <i className="calculator-chart__legend-swatch calculator-chart__legend-swatch--success" />
@@ -628,6 +655,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
                 <strong>{shortfallCount}</strong>
               </span>
             </div>
+            )}
           </div>
         </div>
 
@@ -646,23 +674,31 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
               <span>{includeTax ? 'Pre-tax median' : 'Median savings'}</span>
               <strong style={includeTax ? { opacity: 0.6 } : undefined}>{formatCompactCurrency(simulation.medianSavings)}</strong>
             </div>
+            {includeTuition && (
             <div className="calculator-chart-meta__item">
               <span>Median tuition</span>
               <strong>{formatCompactCurrency(simulation.expectedTuition)}</strong>
             </div>
+            )}
             <div className="calculator-chart-meta__item">
-              <span>Paths funded</span>
+              <span>{includeTuition ? 'Paths funded' : 'Total paths'}</span>
               <strong>
-                {successCount} / {totalPaths}
+                {includeTuition ? `${successCount} / ${totalPaths}` : totalPaths.toLocaleString()}
               </strong>
             </div>
           </div>
 
           <div className="calculator-chart-stage">
-            <div className="calculator-chart-stage__wash calculator-chart-stage__wash--shortfall" />
+            {includeTuition && <div className="calculator-chart-stage__wash calculator-chart-stage__wash--shortfall" />}
             <div className="calculator-chart-stage__wash calculator-chart-stage__wash--success" />
-            <span className="calculator-chart-stage__label calculator-chart-stage__label--top">Higher tuition pressure</span>
-            <span className="calculator-chart-stage__label calculator-chart-stage__label--bottom">Stronger savings outcomes</span>
+            {includeTuition ? (
+              <>
+              <span className="calculator-chart-stage__label calculator-chart-stage__label--top">Higher tuition pressure</span>
+              <span className="calculator-chart-stage__label calculator-chart-stage__label--bottom">Stronger savings outcomes</span>
+              </>
+            ) : (
+              <span className="calculator-chart-stage__label calculator-chart-stage__label--bottom">Higher balance outcomes</span>
+            )}
 
             <div className="calculator-chart-surface">
               <ResponsiveContainer width="100%" height="100%">
@@ -670,7 +706,6 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
                   <CartesianGrid vertical={false} strokeDasharray="4 12" stroke="var(--chart-grid)" />
                   {includeTax && (
                     <>
-                    {/* Pre-tax reference line — dimmed, for comparison only */}
                     <ReferenceLine
                       x={simulation.medianSavings}
                       stroke="var(--chart-guide-blue)"
@@ -678,7 +713,6 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
                       strokeOpacity={0.35}
                       ifOverflow="extendDomain"
                     />
-                    {/* After-tax reference line — primary */}
                     <ReferenceLine
                       x={afterTaxStats.median}
                       stroke="var(--chart-guide-blue)"
@@ -695,12 +729,14 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
                       ifOverflow="extendDomain"
                     />
                   )}
-                  <ReferenceLine
-                    y={simulation.expectedTuition}
-                    stroke="var(--chart-guide-orange)"
-                    strokeDasharray="5 7"
-                    ifOverflow="extendDomain"
-                  />
+                  {includeTuition && (
+                    <ReferenceLine
+                      y={simulation.expectedTuition}
+                      stroke="var(--chart-guide-orange)"
+                      strokeDasharray="5 7"
+                      ifOverflow="extendDomain"
+                    />
+                  )}
                   <XAxis
                     dataKey={includeTax ? "afterTaxBalance" : "savingsBalance"}
                     type="number"
@@ -713,24 +749,58 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
                     fontSize={12}
                     domain={['auto', 'auto']}
                   />
-                  <YAxis
-                    dataKey="tuitionCost"
-                    type="number"
-                    name="Projected Tuition"
-                    tickFormatter={formatCompactCurrency}
-                    stroke="var(--text-soft)"
-                    axisLine={false}
-                    tickLine={false}
-                    tickMargin={10}
-                    fontSize={12}
-                    domain={['auto', 'auto']}
-                  />
+                  {includeTuition ? (
+                    <YAxis
+                      dataKey="tuitionCost"
+                      type="number"
+                      name="Projected Tuition"
+                      tickFormatter={formatCompactCurrency}
+                      stroke="var(--text-soft)"
+                      axisLine={false}
+                      tickLine={false}
+                      tickMargin={10}
+                      fontSize={12}
+                      domain={['auto', 'auto']}
+                    />
+                  ) : (
+                    <YAxis
+                      dataKey="pathIndex"
+                      type="number"
+                      name="Path"
+                      hide
+                      domain={[0, 'auto']}
+                    />
+                  )}
                   <Tooltip
                     cursor={false}
                     content={({ active, payload }) => {
                       const point = payload?.[0]?.payload as AfterTaxPoint | undefined;
 
                       if (active && point) {
+                        if (!includeTuition) {
+                          return (
+                            <div className="calculator-tooltip">
+                              <span className="calculator-tooltip__eyebrow is-success">Simulation path</span>
+                              {includeTax ? (
+                                <>
+                                  <div className="calculator-tooltip__row">
+                                    <span>After-tax savings</span>
+                                    <strong>{formatCurrency(point.afterTaxBalance)}</strong>
+                                  </div>
+                                  <div className="calculator-tooltip__row" style={{ opacity: 0.65 }}>
+                                    <span>Pre-tax (gross)</span>
+                                    <strong>{formatCurrency(point.savingsBalance)}</strong>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="calculator-tooltip__row">
+                                  <span>Gross savings</span>
+                                  <strong>{formatCurrency(point.savingsBalance)}</strong>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
                         const isFunded = includeTax ? point.afterTaxIsSuccess : point.isSuccess;
                         return (
                           <div className="calculator-tooltip">
@@ -766,24 +836,38 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
                     }}
                   />
 
-                  <Scatter
-                    name="Successful"
-                    data={filteredPoints.successPoints}
-                    fill="var(--chart-success-dot)"
-                    stroke="rgba(16, 185, 129, 0.2)"
-                    strokeWidth={0.6}
-                    shape="circle"
-                    isAnimationActive={false}
-                  />
-                  <Scatter
-                    name="Falling Short"
-                    data={filteredPoints.shortfallPoints}
-                    fill="var(--chart-shortfall-dot)"
-                    stroke="rgba(138, 147, 166, 0.16)"
-                    strokeWidth={0.5}
-                    shape="circle"
-                    isAnimationActive={false}
-                  />
+                  {includeTuition ? (
+                    <>
+                    <Scatter
+                      name="Successful"
+                      data={filteredPoints.successPoints}
+                      fill="var(--chart-success-dot)"
+                      stroke="rgba(16, 185, 129, 0.2)"
+                      strokeWidth={0.6}
+                      shape="circle"
+                      isAnimationActive={false}
+                    />
+                    <Scatter
+                      name="Falling Short"
+                      data={filteredPoints.shortfallPoints}
+                      fill="var(--chart-shortfall-dot)"
+                      stroke="rgba(138, 147, 166, 0.16)"
+                      strokeWidth={0.5}
+                      shape="circle"
+                      isAnimationActive={false}
+                    />
+                    </>
+                  ) : (
+                    <Scatter
+                      name="All Paths"
+                      data={filteredPoints.successPoints}
+                      fill="rgba(79, 143, 247, 0.6)"
+                      stroke="rgba(79, 143, 247, 0.2)"
+                      strokeWidth={0.6}
+                      shape="circle"
+                      isAnimationActive={false}
+                    />
+                  )}
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
@@ -825,6 +909,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
             childFutureRate={childFutureRate}
             includeAnnualCaKiddieTax={includeAnnualCaKiddieTax}
             onToggleCaKiddieTax={() => setIncludeAnnualCaKiddieTax(v => !v)}
+            includeTuition={includeTuition}
           />
         )}
       </main>
