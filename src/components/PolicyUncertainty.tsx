@@ -7,7 +7,7 @@ const risks = [
     icon: <MapPin size={24} className="text-orange" />,
     title: "State Tax Conformity",
     pill: "Pending Decision",
-    desc: "Federal growth is tax-deferred (not permanently tax-free). Additionally, states like California have announced they may not conform to Section 530A, meaning state-level capital gains taxes could apply during the accumulation period or at distribution."
+    desc: "Federal growth is tax-deferred (not permanently tax-free). California does not automatically conform to Section 530A, so CA results are modeled as a separate scenario rather than confirmed federal treatment. State-level capital gains taxes could apply during the accumulation period or at distribution."
   },
   {
     icon: <HeartHandshake size={24} className="text-blue" />,
@@ -19,7 +19,7 @@ const risks = [
     icon: <Landmark size={24} className="text-emerald" />,
     title: "IRA-Style Treatment & ABLE Rollover",
     pill: "Awaiting Guidance",
-    desc: "After the growth period, proposed regulations describe traditional IRA-style treatment: contributions are basis, earnings are tax-deferred and taxed at distribution. An ABLE rollover option may be available during the age-17 calendar year; Roth conversion details remain reserved for future guidance."
+    desc: "After the growth period, proposed regulations describe traditional IRA-style treatment: contributions are basis, earnings are tax-deferred and taxed at distribution. Post-growth-period distribution, rollover, and IRA-style treatment details remain implementation-sensitive and subject to final guidance."
   },
   {
     icon: <ShieldAlert size={24} className="text-purple" />,

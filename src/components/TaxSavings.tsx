@@ -164,7 +164,7 @@ export default function TaxSavings({
             Annual CA Kiddie-Tax on Trump Account Growth
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, maxWidth: '520px' }}>
-            <strong style={{ color: 'var(--accent-purple)' }}>Layer 1 (always on):</strong> CA nonconformity scenario — employer contributions modeled as CA-taxable (pending FTB guidance).
+            <strong style={{ color: 'var(--accent-purple)' }}>Layer 1 (always on):</strong> California does not automatically conform; this scenario treats excluded employer contributions as CA-taxable and models possible CA tax drag.
             <br />
             <strong style={{ color: includeAnnualCaKiddieTax ? 'var(--accent-orange)' : 'var(--text-muted)' }}>Layer 2 (toggle):</strong>{' '}
             {includeAnnualCaKiddieTax
@@ -328,7 +328,7 @@ export default function TaxSavings({
               note:    'What you actually owe',
             },
             {
-              label:   'Tuition Target',
+              label:   'Modeled Trump Account Withdrawal',
               value:   expectedTuition,
               accent:  'var(--accent-emerald)',
               bg:      'rgba(16, 185, 129, 0.05)',
@@ -336,7 +336,7 @@ export default function TaxSavings({
               note:    'Penalty-free for education; earnings still taxed',
             },
             {
-              label:   'Taxable Account Needed',
+              label:   'Pre-tax Salary Needed',
               value:   taxableGrossUp,
               accent:  'var(--accent-orange)',
               bg:      'rgba(249, 115, 22, 0.05)',

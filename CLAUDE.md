@@ -26,7 +26,7 @@ GitHub Pages via `.github/workflows/deploy.yml` — triggers on push to `master`
 
 ### Monte Carlo engine + web worker
 
-`lib/calculator.ts` runs 1,000 simulated paths × 18 years × 12 monthly compounds using Box-Muller normal draws. The Calculator component offloads this to `workers/calculator.worker.ts` via a Web Worker with request-ID deduplication — if new inputs arrive before the previous run finishes, the old worker is terminated.
+`lib/calculator.ts` runs 1,000 simulated paths × birth-year-derived years × 12 monthly compounds using Box-Muller normal draws. The Calculator component offloads this to `workers/calculator.worker.ts` via a Web Worker with request-ID deduplication — if new inputs arrive before the previous run finishes, the old worker is terminated.
 
 ### Two-layer CA tax overlay
 

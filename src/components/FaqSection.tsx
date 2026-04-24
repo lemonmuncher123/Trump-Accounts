@@ -5,7 +5,7 @@ const faqs = [
   {
     question: 'Who is eligible to open a Trump Account, and who receives the $1,000 federal contribution?',
     answer:
-      'Two different rules are at work. Under current federal guidance, any U.S. child under age 18 with a Social Security Number can have a Trump Account once an approved custodian offers one. The one-time $1,000 federal contribution, however, is part of a limited pilot program for U.S.-citizen children born between January 1, 2025 and December 31, 2028. The calculator models the deposit only when the selected birth year falls in 2025–2028, while actual receipt still depends on election and IRS requirements.'
+      'Two different rules are at work. Under current federal guidance, an eligible minor with a valid Social Security Number can have a Trump Account once an approved custodian offers one. The one-time $1,000 federal contribution, however, is part of a limited pilot program for U.S.-citizen children born between January 1, 2025 and December 31, 2028. The calculator includes the seed only when the selected birth year falls in 2025–2028; actual receipt requires completing the federal election (Form 4547 or the official online process) and custodial account setup.'
   },
   {
     question: 'Does this calculator assume every child receives the $1,000 federal contribution?',

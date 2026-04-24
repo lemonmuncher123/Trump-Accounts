@@ -34,9 +34,10 @@ export default function AboutSection() {
           <span className="section-kicker">About Us</span>
           <h2 className="section-title">A cleaner planning surface for a complicated policy.</h2>
           <p className="section-copy">
-            We built this calculator to make the proposed college-savings account easier to understand at a
-            glance. The goal is simple: let families move from policy headlines to realistic scenarios without
-            getting lost in one uninterrupted scroll.
+            We built this calculator to make the new 530A Trump Account — an IRA-style tax-deferred savings
+            vehicle that may be used in education planning but is not the same as a 529 plan — easier to
+            understand at a glance. The goal is simple: let families move from policy headlines to realistic
+            scenarios without getting lost in one uninterrupted scroll.
           </p>
         </motion.div>
 

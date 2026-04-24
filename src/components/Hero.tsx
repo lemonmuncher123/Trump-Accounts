@@ -24,8 +24,8 @@ export default function Hero({ dataRangeConfig }: HeroProps) {
             <span className="text-gradient">starts with one decision.</span>
           </h1>
           <p className="hero-subtitle">
-            Model a Trump Account, then scroll down to see why decades of research say the same thing:
-            low-cost index funds and consistent contributions beat everything else over a long horizon.
+            Model a Trump Account, then scroll down to see why decades of research point to the same conclusion:
+            low-cost index funds and consistent contributions have historically outperformed most alternatives over long horizons.
           </p>
           <div className="hero-inline-meta">
             <span>1,000 market paths</span>

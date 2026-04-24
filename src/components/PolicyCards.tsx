@@ -7,7 +7,7 @@ const cards = [
     icon: <Building2 size={36} strokeWidth={1.5} className="text-blue" />,
     title: "Federal Seed Deposit",
     tag: "Pilot Program",
-    desc: "$1,000 federal deposit for U.S.-citizen children born 2025–2028, subject to SSN verification, custodial setup, and an explicit federal election. Zero out-of-pocket required to start if eligible."
+    desc: "$1,000 federal deposit for U.S.-citizen children born 2025–2028, subject to SSN verification, custodial setup, and an explicit federal election. No family contribution is required for the pilot seed itself, but an election and account setup are still required."
   },
   {
     icon: <ShieldCheck size={36} strokeWidth={1.5} className="text-purple" />,
@@ -19,7 +19,7 @@ const cards = [
     icon: <Handshake size={36} strokeWidth={1.5} className="text-emerald" />,
     title: "Employer Match",
     tag: "Pending Details",
-    desc: "Up to $2,500 per employee per year may be excluded from federal income under a qualifying employer program, and it counts toward the $5,000 aggregate annual cap. Not all employers will offer this benefit."
+    desc: "Employer contributions, if offered, may be excluded federally up to $2,500 per employee per year (§128) and count toward the $5,000 aggregate annual cap. Actual employer participation is voluntary and adoption rates remain unknown."
   }
 ];
 

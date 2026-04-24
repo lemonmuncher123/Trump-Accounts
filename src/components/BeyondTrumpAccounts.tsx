@@ -59,7 +59,7 @@ const principles = [
   {
     icon: <TrendingUp size={20} strokeWidth={1.8} />,
     title: 'Keep costs near zero',
-    copy: 'The average actively managed fund charges 0.66% annually; a Vanguard Total Market index fund charges 0.03%. Over 18 years, that gap compounds into tens of thousands of dollars in lost returns. Low-cost index investing consistently outperforms 90% of active managers.',
+    copy: 'The average actively managed fund charges 0.66% annually; a Vanguard Total Market index fund charges 0.03%. Over 18 years, that gap compounds into tens of thousands of dollars in lost returns. According to Vanguard Research (2019) and SPIVA data, low-cost index funds have historically outperformed 85–90% of actively managed large-cap funds over 15-year periods.',
   },
   {
     icon: <BookOpen size={20} strokeWidth={1.8} />,
@@ -277,8 +277,9 @@ export default function BeyondTrumpAccounts() {
           <h3>You don't need a new government program to start building wealth.</h3>
           <p>
             Open a brokerage account, buy a total-market index fund, set up automatic contributions,
-            and let 18 years of compounding do the rest. The research says this beats 90% of
-            professional money managers — and it takes about 15 minutes to set up.
+            and let 18 years of compounding do the rest. According to Vanguard Research (2019) and the
+            SPIVA U.S. Scorecard, low-cost index funds have historically outperformed 85–90% of actively
+            managed large-cap funds over 15-year periods.
           </p>
           <div className="beyond-cta__steps">
             <div className="beyond-cta__step">

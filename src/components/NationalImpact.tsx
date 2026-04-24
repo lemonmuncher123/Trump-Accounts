@@ -20,7 +20,7 @@ export default function NationalImpact() {
             Illustrative <br/><span className="text-gradient">Adoption Scenario</span>
           </h2>
           <p style={{ fontSize: '18px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '24px' }}>
-            The figures below assume 70% of the ~3.63 million annual newborns elect a Trump Account and max contributions for 18 years. Actual outcomes depend on election rates, employer adoption, taxes, financial-aid interactions, market returns, and withdrawal patterns — none of which are modeled here.
+            The figures below are a hypothetical cohort scenario: ~3.63 million annual newborns (CDC, 2023), 70% adoption rate, maximum $5,000/yr family + $2,500/yr employer contributions for 18 years, and average historical S&P 500 returns. Actual outcomes depend on election rates, employer adoption, taxes, financial-aid interactions, market returns, and withdrawal patterns — none of which are modeled here.
           </p>
           <p style={{ fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.6, fontStyle: 'italic' }}>
             This is a hypothetical illustration of potential scale, not a forecast.
