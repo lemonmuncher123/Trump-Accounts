@@ -7,6 +7,7 @@ describe('Calculator Core Logic', () => {
       annualContribution: 5000,
       employerMatchAnnual: 1000,
       universityType: 'public',
+      initialSeed: 1000,
       // ≈12.5% annualized mean, ≈16.9% annualized vol — same defaults the page falls back to.
       monthlyMean: 0.0099,
       monthlyVol: 0.0488,
@@ -33,6 +34,7 @@ describe('Calculator Core Logic', () => {
       annualContribution: annualC,
       employerMatchAnnual: 0,
       universityType: 'public',
+      initialSeed: seed,
       monthlyMean,
       monthlyVol: 0,
     });
@@ -65,6 +67,7 @@ describe('Calculator Core Logic', () => {
       annualContribution: 0,
       employerMatchAnnual: 0,
       universityType: 'public',
+      initialSeed: seed,
       monthlyMean,
       monthlyVol: 0,
     });

@@ -23,9 +23,9 @@ const risks = [
   },
   {
     icon: <ShieldAlert size={24} className="text-purple" />,
-    title: "FAFSA EFC Impact",
+    title: "Financial Aid (SAI) Impact",
     pill: "Pending Regulation",
-    desc: "It is currently unresolved whether Trump Account assets will be heavily weighed in the Expected Family Contribution (EFC) algorithm, potentially offsetting Need-Based Aid."
+    desc: "It is currently unresolved whether Trump Account assets will be heavily weighed in the Student Aid Index (SAI, formerly EFC) formula, potentially offsetting need-based aid."
   }
 ];
 

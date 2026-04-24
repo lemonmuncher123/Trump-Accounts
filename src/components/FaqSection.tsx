@@ -10,7 +10,7 @@ const faqs = [
   {
     question: 'Does this calculator assume every child receives the $1,000 federal contribution?',
     answer:
-      'Yes. To keep projections comparable, the simulator starts every scenario with the $1,000 pilot deposit already credited at year zero. Families whose child does not fall inside the 2025-2028 birth window — or who do not complete the federal election in time — should mentally subtract that seed and the compounding it produces from the displayed balance.'
+      'No. The simulator now uses the selected birth year to determine pilot seed eligibility. Children born 2025–2028 receive the $1,000 federal seed in the model; children born outside that window start with $0. Families should also be aware that actual receipt of the seed requires a valid SSN, U.S. citizenship, custodial setup, and a federal election — none of which the calculator verifies.'
   },
   {
     question: 'Is the $1,000 federal contribution automatic?',
@@ -20,7 +20,7 @@ const faqs = [
   {
     question: 'What does employer matching actually change in the model?',
     answer:
-      'Employers can contribute to a Trump Account on behalf of an employee\'s child up to a statutory annual limit (currently capped at $2,500 per year, indexed for inflation). Those employer dollars do not reduce the family\'s own contribution cap, so they stack on top of family savings. In the simulator they show up as a recurring deposit that compounds for the full 18-year window, which is why even small recurring matches noticeably widen the ending-balance distribution.'
+      'Employers can contribute to a Trump Account on behalf of an employee\'s child. The employer exclusion is capped at $2,500 per year (§128, indexed for inflation), and employer contributions count toward the $5,000 aggregate annual cap — they do not stack on top of it. For example, a $2,500 employer contribution leaves $2,500 of remaining family contribution room. In the simulator they show up as a recurring deposit that compounds for the full growth window, which is why even small recurring matches noticeably widen the ending-balance distribution.'
   },
   {
     question: 'What happens to the account when the child turns 18?',

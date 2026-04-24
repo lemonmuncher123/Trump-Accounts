@@ -6,8 +6,8 @@ const cards = [
   {
     icon: <Building2 size={36} strokeWidth={1.5} className="text-blue" />,
     title: "Federal Seed Deposit",
-    tag: "Confirmed",
-    desc: "$1,000 injected automatically at birth by the government. Zero out-of-pocket required to start."
+    tag: "Pilot Program",
+    desc: "$1,000 federal deposit for U.S.-citizen children born 2025–2028, subject to SSN verification, custodial setup, and an explicit federal election. Zero out-of-pocket required to start if eligible."
   },
   {
     icon: <ShieldCheck size={36} strokeWidth={1.5} className="text-purple" />,

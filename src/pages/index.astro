@@ -3,8 +3,6 @@ import AppLayout from '../layouts/AppLayout.astro';
 import Hero from '../components/Hero';
 import Calculator from '../components/Calculator';
 import BeyondTrumpAccounts from '../components/BeyondTrumpAccounts';
-import { simulateCollegeSavings } from '../lib/calculator';
-
 import YahooFinance from 'yahoo-finance2';
 const yahooFinance = new YahooFinance();
 
@@ -50,23 +48,13 @@ try {
    console.error("[Astro Build] Using fallback parameters for SP500 due to Yahoo Finance error", e);
 }
 
-const previewSim = simulateCollegeSavings({
-  annualContribution: 5000,
-  employerMatchAnnual: 0,
-  universityType: 'public',
-  yearsToMatriculation: 18,
-  monthlyMean,
-  monthlyVol
-});
-const previewMedianBalance = previewSim.medianSavings;
-
 const title = "College Savings Planner | Build Wealth Through Stable Investing";
 const description = "Model Trump Account projections, then discover why low-cost index funds and treasury bonds are the evidence-backed foundation for any education savings strategy.";
 ---
 
 <AppLayout activeTab="calculator" title={title} description={description}>
   <section class="route-page route-page--calculator">
-    <Hero client:load dataRangeConfig={dataRangeConfig} previewMedianBalance={previewMedianBalance} />
+    <Hero client:load dataRangeConfig={dataRangeConfig} />
 
     <section class="container section-spacing" style="padding-top: 0;">
       <div class="section-frame section-frame--calculator">

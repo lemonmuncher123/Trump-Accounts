@@ -30,6 +30,47 @@ export const FEDERAL_EMPLOYER_EXCLUSION_CAP = 2_500; // §128 annual exclusion c
 export const TRUMP_ACCOUNT_ANNUAL_CAP       = 5_000; // total annual contribution cap
 
 // ---------------------------------------------------------------------------
+// 530A account eligibility & pilot seed
+// ---------------------------------------------------------------------------
+export const ACCOUNT_LAUNCH_YEAR     = 2026; // first year contributions can be made
+export const PILOT_SEED_AMOUNT       = 1_000;
+export const PILOT_SEED_START_YEAR   = 2025; // first birth year eligible for pilot seed
+export const PILOT_SEED_END_YEAR     = 2028; // last birth year eligible for pilot seed
+
+export interface BirthYearEligibility {
+  pilotSeedEligible: boolean;
+  initialSeed: number;
+  /** First calendar year in which contributions can be made. */
+  firstContributionYear: number;
+  /** Last calendar year of the growth window (child is 17). */
+  lastGrowthYear: number;
+  /** Calendar year the child turns 18 (account transitions). */
+  distributionYear: number;
+  /** Number of full calendar years of contributions. 0 if child ages out before launch. */
+  contributionYears: number;
+  /** false when the child turns 18 before or during the account launch year. */
+  eligibleForNewContributions: boolean;
+}
+
+export function computeBirthYearEligibility(birthYear: number): BirthYearEligibility {
+  const pilotSeedEligible = birthYear >= PILOT_SEED_START_YEAR && birthYear <= PILOT_SEED_END_YEAR;
+  const firstContributionYear = Math.max(ACCOUNT_LAUNCH_YEAR, birthYear);
+  const lastGrowthYear = birthYear + 17;
+  const distributionYear = birthYear + 18;
+  const contributionYears = Math.max(0, lastGrowthYear - firstContributionYear + 1);
+  const eligibleForNewContributions = contributionYears > 0;
+  return {
+    pilotSeedEligible,
+    initialSeed: pilotSeedEligible ? PILOT_SEED_AMOUNT : 0,
+    firstContributionYear,
+    lastGrowthYear,
+    distributionYear,
+    contributionYears,
+    eligibleForNewContributions,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // California high-income surtax
 // ---------------------------------------------------------------------------
 export const CA_BHST_THRESHOLD = 1_000_000;

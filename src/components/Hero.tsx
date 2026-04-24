@@ -5,16 +5,9 @@ const previewBars = [38, 46, 52, 44, 58, 64, 57, 73, 68, 84, 79, 92];
 
 interface HeroProps {
   dataRangeConfig: string;
-  previewMedianBalance: number;
 }
 
-export default function Hero({ dataRangeConfig, previewMedianBalance }: HeroProps) {
-  const formattedBalance = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    notation: 'compact',
-    maximumFractionDigits: previewMedianBalance >= 1_000_000 ? 1 : 0,
-  }).format(previewMedianBalance);
+export default function Hero({ dataRangeConfig }: HeroProps) {
   return (
     <section className="hero-section container">
       <motion.div
@@ -84,8 +77,8 @@ export default function Hero({ dataRangeConfig, previewMedianBalance }: HeroProp
 
           <div className="hero-preview__metrics" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
             <div>
-              <span>Median balance</span>
-              <strong>{formattedBalance}</strong>
+              <span>Growth window</span>
+              <strong>18 years</strong>
             </div>
             <div>
               <span>Simulated paths</span>

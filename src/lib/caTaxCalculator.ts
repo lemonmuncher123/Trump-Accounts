@@ -34,7 +34,7 @@
  *   - Realization rate 5% (passive buy-and-hold S&P 500 index fund)
  *   - No early withdrawal penalty (education / qualified use)
  *   - No annual CA tax on baseline realized gains beyond LTCG (federal only on 5%)
- *   - CA nonconformity on employer contribution: always true (confirmed)
+ *   - CA nonconformity on employer contribution: modeled as always true (pending FTB guidance)
  *   - 2025 CA kiddie tax: $1,350 exempt → $1,350 at 1% child rate → parent rate
  *
  * NOTE on kiddie tax at 5% realization:
@@ -162,7 +162,7 @@ export interface TaxModelInput {
    * Layer 1 (CA nonconformity on employer contribution) is always applied.
    */
   includeAnnualCaKiddieTax?: boolean;
-  /** Federal $1,000 seed deposit. Only children born 2025-2028 qualify; default 1000. */
+  /** Federal $1,000 seed deposit. Only children born 2025-2028 qualify; default 0. */
   initialSeed?: number;
 }
 
@@ -307,7 +307,7 @@ export function runTaxModel(input: TaxModelInput): TaxModelOutput {
   // The federal government deposits a $1,000 seed for children born 2025-2028.
   // Children born before 2025 do not receive the seed (initialSeed = 0).
   // The seed does NOT create basis and does NOT count toward the $5,000 annual cap.
-  let trumpBalance    = input.initialSeed ?? 1000;
+  let trumpBalance    = input.initialSeed ?? 0;
 
   let baselineTotalFederal           = 0;
   let baselineTotalCa                = 0;
@@ -358,7 +358,7 @@ export function runTaxModel(input: TaxModelInput): TaxModelOutput {
     const trumpFedContrib = federallyTaxableNow * parentFederalMarginalRate;
     trumpTotalFederalBeforeFinal += trumpFedContrib;
 
-    // Layer 1 (confirmed): full contribution is CA-taxable (CA ≠ §128).
+    // Layer 1 (nonconformity scenario): full contribution is CA-taxable (CA ≠ §128).
     const trumpCaContrib = californiaIncrementalTax(baseCaIncome, totalC, filingStatus);
     trumpTotalCa        += trumpCaContrib;
 

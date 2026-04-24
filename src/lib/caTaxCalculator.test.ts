@@ -21,6 +21,7 @@ const BASE_INPUT: TaxModelInput = {
   baseCaTaxableIncome:         150_000,
   parentFederalMarginalRate:   0.24,
   childFutureFederalRate:      0.10,
+  initialSeed:                 1_000,
 };
 
 // ---------------------------------------------------------------------------

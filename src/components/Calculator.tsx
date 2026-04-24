@@ -9,6 +9,7 @@ import {
   type UniversityType
 } from '../lib/calculator';
 import { capContributions, californiaIncrementalTax, pathwiseCaKiddieTax, type FilingStatus } from '../lib/caTaxCalculator';
+import { computeBirthYearEligibility } from '../lib/taxConstants';
 import TaxSavings from './TaxSavings';
 
 /** SimulationPoint extended with after-tax Trump Account balance. */
@@ -81,8 +82,10 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
   const [includeTuition, setIncludeTuition] = useState(false);
   const [childBirthYear, setChildBirthYear] = useState(2026);
 
-  const yearsToMatriculation = childBirthYear >= 2025 ? 18 : (childBirthYear + 18) - 2026;
-  const initialSeed = childBirthYear >= 2025 ? 1000 : 0;
+  const birthYearInfo = computeBirthYearEligibility(childBirthYear);
+  const { pilotSeedEligible, initialSeed, firstContributionYear, lastGrowthYear, distributionYear, eligibleForNewContributions } = birthYearInfo;
+  // Simulation needs at least 1 year; UI warns when eligibility is 0
+  const yearsToMatriculation = Math.max(1, birthYearInfo.contributionYears);
 
   const debouncedAnnual = useDebounce(annualContribution, 160);
   const debouncedMatch = useDebounce(employerMatchAnnual, 160);
@@ -388,7 +391,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
     <div className="app-layout">
       <aside className="sidebar">
         <h1 style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '-0.5px', marginBottom: '8px' }}>
-          Future College Savings
+          530A Trump Account Calculator
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '32px', lineHeight: 1.5 }}>
           Monte-Carlo simulations generating 1,000 parallel {yearsToMatriculation}-year realities based on real S&amp;P 500
@@ -431,11 +434,18 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              {childBirthYear >= 2025
-                ? `Investment horizon: 18 years (newborn · includes $1,000 federal seed)`
-                : `Investment horizon: ${yearsToMatriculation} year${yearsToMatriculation !== 1 ? 's' : ''} (2026 → ${childBirthYear + 18}) · no federal seed`
-              }
+            {eligibleForNewContributions ? (
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                {`Contribution years ${firstContributionYear}–${lastGrowthYear} (${birthYearInfo.contributionYears} yr${birthYearInfo.contributionYears !== 1 ? 's' : ''}); transition ${distributionYear}`}
+                {pilotSeedEligible ? ' · $1,000 federal seed' : ' · no federal seed'}
+              </div>
+            ) : (
+              <div style={{ fontSize: '11px', color: 'var(--accent-orange)', lineHeight: 1.5 }}>
+                Child turns 18 before account launch ({distributionYear} ≤ {firstContributionYear}). No new contributions possible under §530A.
+              </div>
+            )}
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.4, marginTop: '4px', opacity: 0.7 }}>
+              Calendar-year approximation. Actual eligibility requires valid SSN, U.S. citizenship, custodial setup, and federal election. Contributions begin no earlier than July 4, 2026.
             </div>
           </div>
 
@@ -480,8 +490,8 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
               value={annualContribution}
               onChange={(event) => setAnnualContribution(Number(event.target.value))}
               min="0"
-              max="20000"
-              step="500"
+              max="5000"
+              step="250"
               data-testid="annual-input"
             />
           </div>
@@ -491,7 +501,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Employer Contribution
               </span>
-              <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--accent-emerald)' }}>+ ${employerMatchAnnual.toLocaleString()}</span>
+              <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--accent-emerald)', whiteSpace: 'nowrap' }}>+${employerMatchAnnual.toLocaleString()}</span>
             </div>
             <input
               type="range"
@@ -499,11 +509,15 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
               value={employerMatchAnnual}
               onChange={(event) => setEmployerMatchAnnual(Number(event.target.value))}
               min="0"
-              max="10000"
-              step="500"
+              max="2500"
+              step="250"
               data-testid="match-input"
             />
           </div>
+        </div>
+
+        <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.4, opacity: 0.7, marginTop: '-4px' }}>
+          Caps shown are static 2025 current-dollar values ($5,000 total / $2,500 employer). Statutory indexing for inflation is not modeled.
         </div>
 
         {inputsExceedCap && (

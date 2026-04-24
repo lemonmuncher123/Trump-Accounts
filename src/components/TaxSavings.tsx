@@ -164,7 +164,7 @@ export default function TaxSavings({
             Annual CA Kiddie-Tax on Trump Account Growth
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, maxWidth: '520px' }}>
-            <strong style={{ color: 'var(--accent-purple)' }}>Layer 1 (always on):</strong> CA nonconformity — employer contributions are CA-taxable (confirmed).
+            <strong style={{ color: 'var(--accent-purple)' }}>Layer 1 (always on):</strong> CA nonconformity scenario — employer contributions modeled as CA-taxable (pending FTB guidance).
             <br />
             <strong style={{ color: includeAnnualCaKiddieTax ? 'var(--accent-orange)' : 'var(--text-muted)' }}>Layer 2 (toggle):</strong>{' '}
             {includeAnnualCaKiddieTax
