@@ -15,7 +15,7 @@ vi.mock('../lib/calculator', () => ({
           savingsBalance: medianSavings,
           tuitionCost: expectedTuition,
           isSuccess: medianSavings >= expectedTuition,
-          balanceByYear: new Float64Array(18),
+          balanceByYear: new Float64Array(input.yearsToMatriculation ?? 18),
         }
       ],
       expectedTuition,
@@ -48,7 +48,7 @@ describe('Calculator React Component', () => {
     expect(screen.getByText(/Future College Savings/i)).toBeInTheDocument();
     expect(screen.getByTestId('annual-input')).toBeInTheDocument();
     expect(screen.getByTestId('match-input')).toBeInTheDocument();
-    expect(screen.getByTestId('uni-select')).toBeInTheDocument();
+    expect(screen.getByTestId('birth-year-select')).toBeInTheDocument();
   });
 
   it('updates calculations when inputs change', () => {

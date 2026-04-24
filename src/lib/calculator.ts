@@ -5,6 +5,8 @@ export interface CalculatorInput {
   employerMatchAnnual: number;
   universityType: UniversityType;
   yearsToMatriculation?: number; // default 18
+  /** Federal $1,000 seed deposit. Only children born 2025-2028 qualify; default 1000. */
+  initialSeed?: number;
   /** Mean of monthly returns (e.g. ≈0.0099 for ~12.5% annualized). */
   monthlyMean: number;
   /** Standard deviation of monthly returns (e.g. ≈0.0488 for ~16.9% annualized). */
@@ -42,7 +44,7 @@ export function simulateCollegeSavings(input: CalculatorInput): SimulationOutput
   const numSimulations = 1000;
   
   const startTuition = CURRENT_TUITION_COSTS[input.universityType];
-  const initialSeed = 1000;
+  const initialSeed = input.initialSeed ?? 1000;
   
   const points: SimulationPoint[] = [];
   let successCount = 0;

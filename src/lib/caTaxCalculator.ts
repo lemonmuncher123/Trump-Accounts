@@ -162,6 +162,8 @@ export interface TaxModelInput {
    * Layer 1 (CA nonconformity on employer contribution) is always applied.
    */
   includeAnnualCaKiddieTax?: boolean;
+  /** Federal $1,000 seed deposit. Only children born 2025-2028 qualify; default 1000. */
+  initialSeed?: number;
 }
 
 export interface TaxYearRow {
@@ -303,9 +305,9 @@ export function runTaxModel(input: TaxModelInput): TaxModelOutput {
 
   let baselineBalance = 0;
   // The federal government deposits a $1,000 seed for children born 2025-2028.
-  // This does NOT create basis (not an individual contribution) and does NOT
-  // count toward the $5,000 annual cap. It is fully taxable at distribution.
-  let trumpBalance    = 1000;
+  // Children born before 2025 do not receive the seed (initialSeed = 0).
+  // The seed does NOT create basis and does NOT count toward the $5,000 annual cap.
+  let trumpBalance    = input.initialSeed ?? 1000;
 
   let baselineTotalFederal           = 0;
   let baselineTotalCa                = 0;

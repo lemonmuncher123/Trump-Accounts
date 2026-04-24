@@ -11,8 +11,6 @@ import {
 import { capContributions, californiaIncrementalTax, pathwiseCaKiddieTax, type FilingStatus } from '../lib/caTaxCalculator';
 import TaxSavings from './TaxSavings';
 
-const TRUMP_ACCOUNT_INITIAL_SEED = 1_000; // federal $1,000 seed deposit
-
 /** SimulationPoint extended with after-tax Trump Account balance. */
 interface AfterTaxPoint extends SimulationPoint {
   afterTaxBalance: number;
@@ -81,6 +79,10 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
   const [includeTax, setIncludeTax]                 = useState(true);
   const [includeAnnualCaKiddieTax, setIncludeAnnualCaKiddieTax] = useState(true);
   const [includeTuition, setIncludeTuition] = useState(false);
+  const [childBirthYear, setChildBirthYear] = useState(2026);
+
+  const yearsToMatriculation = childBirthYear >= 2025 ? 18 : (childBirthYear + 18) - 2026;
+  const initialSeed = childBirthYear >= 2025 ? 1000 : 0;
 
   const debouncedAnnual = useDebounce(annualContribution, 160);
   const debouncedMatch = useDebounce(employerMatchAnnual, 160);
@@ -91,7 +93,8 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
       annualContribution: 5000,
       employerMatchAnnual: 0,
       universityType: 'public',
-      yearsToMatriculation: 18,
+      yearsToMatriculation,
+      initialSeed,
       monthlyMean,
       monthlyVol
     })
@@ -209,7 +212,8 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
       annualContribution: cappedAnnual,
       employerMatchAnnual: cappedMatch,
       universityType,
-      yearsToMatriculation: 18,
+      yearsToMatriculation,
+      initialSeed,
       monthlyMean,
       monthlyVol
     };
@@ -238,7 +242,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
     return () => {
       cancelInFlightCalculation(false);
     };
-  }, [debouncedAnnual, debouncedMatch, universityType, monthlyMean, monthlyVol]);
+  }, [debouncedAnnual, debouncedMatch, universityType, yearsToMatriculation, initialSeed, monthlyMean, monthlyVol]);
 
   const deferredPoints = useDeferredValue(simulation.scatterPoints);
   const isSettlingInput = annualContribution !== debouncedAnnual || employerMatchAnnual !== debouncedMatch || baseCaIncome !== debouncedBaseCaIncome;
@@ -262,31 +266,31 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
   const afterTaxPoints = useMemo<AfterTaxPoint[]>(() => {
     const { employerC, otherC } = capContributions(debouncedMatch, debouncedAnnual);
     const totalC   = employerC + otherC;
-    const basis    = 18 * otherC;  // federal basis
-    const caBasis  = 18 * totalC;  // CA basis (both employer + individual are CA-taxed)
+    const basis    = yearsToMatriculation * otherC;
+    const caBasis  = yearsToMatriculation * totalC;
 
     return deferredPoints.map((pt, i) => {
       const federalDistTax = Math.max(0, pt.savingsBalance - basis) * childFutureRate;
       const caTax = includeAnnualCaKiddieTax
-        ? pathwiseCaKiddieTax(pt.balanceByYear, TRUMP_ACCOUNT_INITIAL_SEED, totalC, filingStatus, baseCaIncome)
+        ? pathwiseCaKiddieTax(pt.balanceByYear, initialSeed, totalC, filingStatus, baseCaIncome)
         : californiaIncrementalTax(baseCaIncome + totalC, Math.max(0, pt.savingsBalance - caBasis), filingStatus);
       const afterTaxBalance = Math.max(0, pt.savingsBalance - federalDistTax - caTax);
       return { ...pt, afterTaxBalance, afterTaxIsSuccess: afterTaxBalance >= pt.tuitionCost, pathIndex: i };
     });
-  }, [deferredPoints, debouncedAnnual, debouncedMatch, childFutureRate, filingStatus, baseCaIncome, includeAnnualCaKiddieTax]);
+  }, [deferredPoints, debouncedAnnual, debouncedMatch, childFutureRate, filingStatus, baseCaIncome, includeAnnualCaKiddieTax, yearsToMatriculation, initialSeed]);
 
   // Non-deferred stats for the results panel (updates when simulation settles)
   const afterTaxStats = useMemo(() => {
     const { employerC, otherC } = capContributions(debouncedMatch, debouncedAnnual);
     const totalC   = employerC + otherC;
-    const basis    = 18 * otherC;
-    const caBasis  = 18 * totalC;
+    const basis    = yearsToMatriculation * otherC;
+    const caBasis  = yearsToMatriculation * totalC;
     const balances: number[] = [];
     let successCt = 0;
     for (const pt of simulation.scatterPoints) {
       const federalDistTax = Math.max(0, pt.savingsBalance - basis) * childFutureRate;
       const caTax = includeAnnualCaKiddieTax
-        ? pathwiseCaKiddieTax(pt.balanceByYear, TRUMP_ACCOUNT_INITIAL_SEED, totalC, filingStatus, baseCaIncome)
+        ? pathwiseCaKiddieTax(pt.balanceByYear, initialSeed, totalC, filingStatus, baseCaIncome)
         : californiaIncrementalTax(baseCaIncome + totalC, Math.max(0, pt.savingsBalance - caBasis), filingStatus);
       const afterTaxBalance = Math.max(0, pt.savingsBalance - federalDistTax - caTax);
       balances.push(afterTaxBalance);
@@ -298,7 +302,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
       successCount: successCt,
       successRate:  (successCt / (simulation.scatterPoints.length || 1)) * 100,
     };
-  }, [simulation.scatterPoints, debouncedAnnual, debouncedMatch, childFutureRate, filingStatus, baseCaIncome, includeAnnualCaKiddieTax]);
+  }, [simulation.scatterPoints, debouncedAnnual, debouncedMatch, childFutureRate, filingStatus, baseCaIncome, includeAnnualCaKiddieTax, yearsToMatriculation, initialSeed]);
   // ────────────────────────────────────────────────────────────────────────
 
   const filteredPoints = useMemo(() => {
@@ -387,7 +391,7 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
           Future College Savings
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '32px', lineHeight: 1.5 }}>
-          Monte-Carlo simulations generating 1,000 parallel 18-year realities based on real S&amp;P 500
+          Monte-Carlo simulations generating 1,000 parallel {yearsToMatriculation}-year realities based on real S&amp;P 500
           volatility ({dataRangeConfig}).
         </p>
 
@@ -410,6 +414,31 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
         )}
 
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Child Birth Year
+              </span>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>{childBirthYear}</span>
+            </div>
+            <select
+              className="apple-select"
+              value={childBirthYear}
+              onChange={(e) => setChildBirthYear(Number(e.target.value))}
+              data-testid="birth-year-select"
+            >
+              {Array.from({ length: 20 }, (_, i) => 2028 - i).map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              {childBirthYear >= 2025
+                ? `Investment horizon: 18 years (newborn · includes $1,000 federal seed)`
+                : `Investment horizon: ${yearsToMatriculation} year${yearsToMatriculation !== 1 ? 's' : ''} (2026 → ${childBirthYear + 18}) · no federal seed`
+              }
+            </div>
+          </div>
+
           {includeTuition && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -634,8 +663,8 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
             <h2 className="calculator-chart__title">{includeTuition ? 'Where 1,000 college outcomes land' : 'Where 1,000 savings paths land'}</h2>
             <p className="calculator-chart__copy">
               {includeTuition
-                ? 'Each point is one simulated 18-year path. Median savings and median tuition are marked so the cloud is easier to read.'
-                : 'Each point is one simulated 18-year path. The vertical spread separates the dots so the balance distribution is easier to read.'}
+                ? `Each point is one simulated ${yearsToMatriculation}-year path. Median savings and median tuition are marked so the cloud is easier to read.`
+                : `Each point is one simulated ${yearsToMatriculation}-year path. The vertical spread separates the dots so the balance distribution is easier to read.`}
             </p>
           </div>
           <div className="calculator-chart__header-side">
@@ -910,6 +939,8 @@ export default function Calculator({ monthlyMean, monthlyVol, dataRangeConfig }:
             includeAnnualCaKiddieTax={includeAnnualCaKiddieTax}
             onToggleCaKiddieTax={() => setIncludeAnnualCaKiddieTax(v => !v)}
             includeTuition={includeTuition}
+            years={yearsToMatriculation}
+            initialSeed={initialSeed}
           />
         )}
       </main>

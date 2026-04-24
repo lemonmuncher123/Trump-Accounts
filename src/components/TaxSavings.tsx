@@ -35,6 +35,8 @@ interface Props {
   includeAnnualCaKiddieTax: boolean;
   onToggleCaKiddieTax: () => void;
   includeTuition: boolean;
+  years: number;
+  initialSeed: number;
 }
 
 
@@ -64,6 +66,8 @@ export default function TaxSavings({
   includeAnnualCaKiddieTax,
   onToggleCaKiddieTax,
   includeTuition,
+  years,
+  initialSeed,
 }: Props) {
 
   const { employerC, otherC, wasCapped } = useMemo(
@@ -78,7 +82,7 @@ export default function TaxSavings({
   const result = useMemo(
     () =>
       runTaxModel({
-        years: 18,
+        years,
         annualEmployerContribution: employerC,
         annualOtherContribution:    otherC,
         monthlyReturnRate:          monthlyMean,
@@ -87,8 +91,9 @@ export default function TaxSavings({
         parentFederalMarginalRate:  parentFederalRate,
         childFutureFederalRate:     childFutureRate,
         includeAnnualCaKiddieTax,
+        initialSeed,
       }),
-    [employerC, otherC, monthlyMean, filingStatus, baseCaIncome, parentFederalRate, childFutureRate, includeAnnualCaKiddieTax],
+    [employerC, otherC, monthlyMean, filingStatus, baseCaIncome, parentFederalRate, childFutureRate, includeAnnualCaKiddieTax, years, initialSeed],
   );
 
   // Tuition gross-up: from a taxable account you must earn more before taxes
@@ -137,9 +142,9 @@ export default function TaxSavings({
           Federal &amp; State Tax Advantage
         </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, maxWidth: '600px', margin: 0 }}>
-          The Simulation tab plots stochastic 18-year paths — <strong style={{ color: 'var(--text-main)' }}>gross by default</strong>, or <strong style={{ color: 'var(--text-main)' }}>after federal &amp; CA tax</strong> when the <em>Include taxes</em> toggle is on (median, success rate, and scatter X-axis all switch).
+          The Simulation tab plots stochastic {years}-year paths — <strong style={{ color: 'var(--text-main)' }}>gross by default</strong>, or <strong style={{ color: 'var(--text-main)' }}>after federal &amp; CA tax</strong> when the <em>Include taxes</em> toggle is on (median, success rate, and scatter X-axis all switch).
           This tab applies taxes to both vehicles using a deterministic {(annualizedReturn * 100).toFixed(1)}% annual return: the <strong style={{ color: 'var(--text-main)' }}>Trump Account</strong> includes federal distribution tax and CA tax (annual kiddie-tax or terminal, depending on the toggle below);
-          the <strong style={{ color: 'var(--text-main)' }}>Taxable Account</strong> includes annual LTCG drag and a terminal liquidation tax at year 18.
+          the <strong style={{ color: 'var(--text-main)' }}>Taxable Account</strong> includes annual LTCG drag and a terminal liquidation tax at year {years}.
           The gap between the two accounts is your real after-tax advantage.
         </p>
       </div>
@@ -223,7 +228,7 @@ export default function TaxSavings({
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                After-Tax Wealth at Year 18
+                After-Tax Wealth at Year {years}
               </span>
               <span style={{
                 fontSize:     'clamp(20px, 2.5vw, 28px)',
@@ -277,7 +282,7 @@ export default function TaxSavings({
 
             <div style={{ marginTop: '14px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
               Assumes qualified education use (no early withdrawal penalty).
-              Both accounts compared on fully-liquidated after-tax cash at year 18.
+              Both accounts compared on fully-liquidated after-tax cash at year {years}.
               Taxable baseline includes terminal LTCG + CA tax on unrealized gains; federal growth deferred until distribution.
               {includeAnnualCaKiddieTax
                 ? ' Trump Account CA tax: annual kiddie-tax on 5% of gains (conservative).'
@@ -304,7 +309,7 @@ export default function TaxSavings({
 
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '20px', maxWidth: '700px' }}>
           Your Monte Carlo projects a median tuition bill of{' '}
-          <strong style={{ color: 'var(--text-main)' }}>{fmt(expectedTuition)}</strong> at year 18.
+          <strong style={{ color: 'var(--text-main)' }}>{fmt(expectedTuition)}</strong> at year {years}.
           A Trump Account used for qualified education avoids the{' '}
           <strong style={{ color: 'var(--accent-emerald)' }}>10% early withdrawal penalty</strong>; however, earnings above basis are still taxed as ordinary income at the child's rate.
           By comparison, a taxable account must be fully liquidated and taxed at your marginal rate, requiring{' '}
